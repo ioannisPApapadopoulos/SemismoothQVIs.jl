@@ -18,14 +18,14 @@ function Φ0(x)
 end
 
 Φ₀ = interpolate_everywhere(x->Φ0(x), VT)
-Ψ₀ = Φ₀
+Ψ₀ = interpolate_everywhere(x->1.0, VT)
 
 bump_1d(x) = (0.0 <= x[1] <= 1.0) ? exp(-0.25 / (x[1] - x[1]^2)) : 0.0
 bump(x) = begin
 	r = sqrt((x[1] - 0.5)^2 + (x[2] - 0.5)^2)
 	return bump_1d(0.5 + r)
 end
-ϕ = interpolate_everywhere(x->10*bump(x), UT)
+ϕ = interpolate_everywhere(x->0.1*bump(x), UT)
 ψ = ϕ
 
 f = interpolate_everywhere(x->40, Uu)

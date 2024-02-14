@@ -258,13 +258,13 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10
     h1c = h1(Q, uB, uᵢ)
     append!(h1s, h1c)
 
-
+    r, c = proj_rc
+    c != 0.0 && error("Projection not implemented for centre not at c=0.0, currently c=$c.")
     while outer_its < max_its && h1c > tol
 
         R = uᵢ - uB
 
         u_norm = Xnorm(Q, uᵢ)
-        r, c = proj_rc
 
         if u_norm ≤ r
             print("\n|u| ≤ r.\n")
