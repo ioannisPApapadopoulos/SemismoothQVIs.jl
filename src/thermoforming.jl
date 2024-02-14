@@ -23,6 +23,7 @@ struct GeneralizedThermoformingQVI{T}
     aT::Tuple{Function, Function}
     asn::Tuple{Function, Function}
     asnp::Tuple{Function, Function}
+    amy::Tuple{Function, Function}
     fe_space_u::Tuple{FESpace, FESpace}
     fe_space_T::Tuple{FESpace, FESpace}
 end
@@ -43,14 +44,14 @@ function GeneralizedThermoformingQVI(dΩ::Gridap.CellData.GenericMeasure, k::T, 
     au0(uh, v) =∫(∇(uh) ⋅ ∇(v) - f ⋅ v) * dΩ
     ju0(uh, duh, v) =∫(∇(duh) ⋅ ∇(v)) * dΩ
 
-    AΦ(ξ, ζ, uh, Th) = ∇(ξ) ⋅ ∇(ζ) + k*ξ ⋅ ζ - (dg ∘ (ψ ⋅ Th - uh)) ⋅ (ψ ⋅ ξ) ⋅ ζ
+    AΦ(ξ, ζ, uh, Th) = ∇(ξ) ⋅ ∇(ζ) + k*ξ ⋅ ζ - (dg ∘ (Ψ₀ + ψ ⋅ Th - uh)) ⋅ (ψ ⋅ ξ) ⋅ ζ
     asn((du, ξ, w), (v, ζ, q), R) = ∫(
             R ⋅ v
     )*dΩ
     jsn((du, ξ, w), (ddu, dξ, dw), (v, ζ, q), uh, Th)= ∫(
         ddu ⋅ v - ψ ⋅ dξ ⋅ v - dw ⋅ v
         + AΦ(dξ, ζ, uh, Th) + (dg ∘ (Ψ₀ + ψ ⋅ Th - uh)) ⋅ ddu ⋅ ζ
-        + ∇(dw) ⋅ ∇(q) + ϕ ⋅ ∇(dξ) ⋅ ∇(q) + dξ ⋅ ∇(ϕ) ⋅ ∇(q)
+        + ∇(dw) ⋅ ∇(q) + ψ ⋅ ∇(dξ) ⋅ ∇(q) + dξ ⋅ ∇(ψ) ⋅ ∇(q)
     )*dΩ   
 
     asnp((du, pu, ξ, w), (v, pv, ζ, q), R) = ∫(
@@ -63,8 +64,20 @@ function GeneralizedThermoformingQVI(dΩ::Gridap.CellData.GenericMeasure, k::T, 
         + ∇(dw) ⋅ ∇(q) + ϕ ⋅ ∇(dξ) ⋅ ∇(q) + dξ ⋅ ∇(ϕ) ⋅ ∇(q)
     )*dΩ
 
+    AS(w, q, uh, Th, ds) = ∇(w) ⋅ ∇(q) + (ds ∘ (uh - Φ₀ - ϕ ⋅ Th)) ⋅ w ⋅ q
+    # amy((du, ξ, w), (v, ζ, q), R, uh, Th, ds)= ∫(
+    #     du ⋅ v - w ⋅ v + R ⋅ v
+    #     + AΦ(ξ, ζ, uh, Th) + (dg ∘ (Ψ₀ + ψ ⋅ Th - uh)) ⋅ du ⋅ ζ
+    #     + AS(w, q, uh, Th, ds) - (ds ∘ (uh - Φ₀ - ϕ ⋅ Th)) ⋅ ϕ ⋅ ξ ⋅ q
+    # )*dΩ
+    jmy((du, ξ, w), (ddu, dξ, dw), (v, ζ, q), uh, Th, ds)= ∫(
+        ddu ⋅ v - dw ⋅ v
+        + AΦ(dξ, ζ, uh, Th) + (dg ∘ (Ψ₀ + ψ ⋅ Th - uh)) ⋅ ddu ⋅ ζ
+        + AS(dw, q, uh, Th, ds) - (ds ∘ (uh - Φ₀ - ϕ ⋅ Th)) ⋅ ϕ ⋅ dξ ⋅ q
+    )*dΩ
+
     Vu, VT = Uu.space, UT
-    GeneralizedThermoformingQVI{T}(dΩ, k, Φ₀, ϕ, Ψ₀, ψ, g, dg, f, (au, ju), (au0, ju0), (aT, jT), (asn, jsn), (asnp, jsnp), (Uu, Vu), (UT, VT))
+    GeneralizedThermoformingQVI{T}(dΩ, k, Φ₀, ϕ, Ψ₀, ψ, g, dg, f, (au, ju), (au0, ju0), (aT, jT), (asn, jsn), (asnp, jsnp), (asn, jmy), (Uu, Vu), (UT, VT))
 end
 
 # Smoothed Moreau-Yosida penalisation and its derivative
@@ -87,7 +100,7 @@ function dσ(u, ρ)
     end
 end
 
-Xinner(Q::GeneralizedThermoformingQVI{T}, u, v) where T = sum(∫(∇(u) ⋅ ∇(v) + u ⋅ v)*Q.dΩ)
+Xinner(Q::GeneralizedThermoformingQVI{T}, u, v) where T = sum(∫(∇(u) ⋅ ∇(v))*Q.dΩ)
 Xnorm(Q::GeneralizedThermoformingQVI{T}, u) where T = sqrt(Xinner(Q, u, u))
 
 function projectionB(Q::GeneralizedThermoformingQVI{T}, u, proj_rc) where T
@@ -103,7 +116,7 @@ function projectionB(Q::GeneralizedThermoformingQVI{T}, u, proj_rc) where T
     end
 end
 
-function Φ(Q::GeneralizedThermoformingQVI, uh; Tic=[], bt=true, tol=IN_TOL)
+function Φ(Q::GeneralizedThermoformingQVI, uh; T₀=[], bt=true, tol=IN_TOL)
     aT, jT = Q.aT
     UT, VT = Q.fe_space_T
 
@@ -111,17 +124,17 @@ function Φ(Q::GeneralizedThermoformingQVI, uh; Tic=[], bt=true, tol=IN_TOL)
     jbT(Th, dTh, R) = jT(Th, dTh, R, uh)
     opT = FEOperator(bT, jbT, UT, VT)
     if bt == false
-        T, its_T = newton(opT, Tic, max_iter=400, damping=1, tol=IN_TOL, info=true)
+        T, its_T = newton(opT, T₀, max_iter=400, damping=1, tol=IN_TOL, info=true)
     else
         nls = NLSolver(show_trace=true, method=:newton, linesearch=LineSearches.BackTracking(), ftol=tol, xtol=10*eps())
         solver = FESolver(nls)
-        T, its_T = solve!(FEFunction(VT, Tic.free_values[:]),solver,opT)
+        T, its_T = solve!(FEFunction(VT, T₀.free_values[:]),solver,opT)
         its_T = its_T.result.iterations
     end
     return (T, its_T)
 end
 
-function Moreau_Yosida_it(Q::GeneralizedThermoformingQVI, T; uic=[], ρ=1e-5, bt=true, tol=IN_TOL, max_iter=400)
+function Moreau_Yosida_it(Q::GeneralizedThermoformingQVI, T; u₀=[], ρ=1e-5, bt=true, tol=IN_TOL, max_iter=400)
 
     s(u) = σ(u,ρ)/ρ 
     ds(u) = dσ(u,ρ)/ρ
@@ -133,23 +146,23 @@ function Moreau_Yosida_it(Q::GeneralizedThermoformingQVI, T; uic=[], ρ=1e-5, bt
     jbu(uh, duh, v) = ju(uh, duh, v, ds, T)
     opu = FEOperator(bu, jbu, Uu, Vu)
     if bt == false
-        uB, its_u = newton(opu, uic, max_iter=max_iter, damping=1, tol=tol, info=true);
+        uB, its_u = newton(opu, u₀, max_iter=max_iter, damping=1, tol=tol, info=true);
     else
         nls = NLSolver(show_trace=true, method=:newton, linesearch=LineSearches.BackTracking(), ftol=tol, xtol=10*eps())
         solver = FESolver(nls)
-        uB, its_u = solve!(uic,solver,opu)
+        uB, its_u = solve!(u₀,solver,opu)
         its_u = its_u.result.iterations
     end
     return (uB, its_u)
 end
 
-function Path_Following_S(Q::GeneralizedThermoformingQVI, Tᵢ; uic=[], ρ0=1, max_its=20, tol=IN_TOL, bt=true)
+function Path_Following_S(Q::GeneralizedThermoformingQVI, Tᵢ; u₀=[], ρ0=1, max_its=20, tol=IN_TOL, bt=true)
     Uu = first(Q.fe_space_u)
-    uh = FEFunction(Uu, uic.free_values[:])
+    uh = FEFunction(Uu, u₀.free_values[:])
     its = 0
     for ρ in [ρ0*10.0^(-i) for i in 0:5]
         print("\n Considering ρ = $ρ.\n")
-        (uh, it) = Moreau_Yosida_it(Q, Tᵢ, uic=uh, ρ=ρ, bt=bt, tol=tol)
+        (uh, it) = Moreau_Yosida_it(Q, Tᵢ, u₀=uh, ρ=ρ, bt=bt, tol=tol)
         its += it
         if ρ < 1e-6
             break
@@ -158,41 +171,43 @@ function Path_Following_S(Q::GeneralizedThermoformingQVI, Tᵢ; uic=[], ρ0=1, m
     return (uh, its)
 end
 
-function bm_S(Q::GeneralizedThermoformingQVI,Tᵢ; uic=[])
+function bm_S(Q::GeneralizedThermoformingQVI,Tᵢ; u₀=[])
     au0, ju0 = Q.au0
     Uu, Vu = Q.fe_space_u
     opu = FEOperator(au0, ju0, Uu, Vu)
     lb = -1e10*ones(Vu.nfree)
     ub = interpolate_everywhere(Q.Φ₀ + Q.ϕ ⋅ Tᵢ, Uu).free_values
-    uB, its_u = bm(opu, uic, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true);
+    uB, its_u = bm(opu, u₀, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true);
     return (uB, its_u)
 end
 
-function hik_S(Q::GeneralizedThermoformingQVI,Tᵢ; uic=[])
+function hik_S(Q::GeneralizedThermoformingQVI,Tᵢ; u₀=[])
     au0, ju0 = Q.au0
     Uu, Vu = Q.fe_space_u
     opu = FEOperator(au0, ju0, Uu, Vu)
     lb = -1e10*ones(Vu.nfree)
     ub = interpolate_everywhere(Q.Φ₀ + Q.ϕ ⋅ Tᵢ, Uu).free_values
-    uB, its_u = hik(opu, uic, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true);
+    uB, its_u = hik(opu, u₀, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true);
     return (uB, its_u)
 end
 
-function inner_solve(Q::GeneralizedThermoformingQVI, u, T_, proj_rc::Tuple{Number, Number}, tol::Number, bt::Bool, PF::Bool, ρ0::Number, newton_its::Int, pf_its::Int, hik_its::Int)
+function inner_solve(Q::GeneralizedThermoformingQVI, u, T_, proj_rc::Tuple{Number, Number}, tol::Number, bt::Bool, PF::Bool, FS::Bool, ρ0::Number, newton_its::Int, pf_its::Int, hik_its::Int)
     print("\n   Project u.\n")
     pu = projectionB(Q, u, proj_rc)
     print("\n   Solve for T.\n")
-    (T, it) = Φ(Q, pu, Tic=T_,tol=tol, bt=bt); newton_its+=it;
+    (T, it) = Φ(Q, pu, T₀=T_,tol=tol, bt=bt); newton_its+=it;
 
-    print("\n   Path-following MY for u.\n")
     if PF==true
-        (S, it) = Path_Following_S(Q, T, uic=pu, tol=tol, bt=bt, ρ0=ρ0); pf_its+=it;
+        print("\n   Path-following MY for u.\n")
+        (S, it) = Path_Following_S(Q, T, u₀=pu, tol=IN_TOL, bt=bt, ρ0=ρ0); pf_its+=it;
     else
         S = pu
     end
 
-    print("\n   HIK feasibility step for u.\n")
-    (S, it) = hik_S(Q, T, uic=S); hik_its+=it;
+    if FS==true
+        print("\n   HIK feasibility step for u.\n")
+        (S, it) = hik_S(Q, T, u₀=S); hik_its+=it;
+    end
 
     return pu, T, S, newton_its, pf_its, hik_its
 end
@@ -207,7 +222,7 @@ function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min
     newton_its, pf_its, hik_its, outer_its =  0, 0, 0, 0
     while outer_its < max_its
 
-        _, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, ρ0, newton_its, pf_its, hik_its)
+        _, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, true, ρ0, newton_its, pf_its, hik_its)
 
         append!(h1_1, h1(Q, uB, uᵢ))
         uᵢ = FEFunction(Vu, uB.free_values[:])
@@ -224,7 +239,7 @@ function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min
     return (zhs, h1_1, its)
 end
 
-function newtonss(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true)
+function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true)
 
     Uu, Vu = Q.fe_space_u
     UT, VT = Q.fe_space_T
@@ -236,11 +251,10 @@ function newtonss(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10, tol=IN
     Up, Vp =  MultiFieldFESpace([Uu, Uu, UT, Uu]), MultiFieldFESpace([Vu, Vu, VT, Vu])
 
     zhs, h1s = [], []
-    h1c = 1
-    outer_its, hik_its, pf_its, newton_its = 0,0,0,0
+    h1c, outer_its, hik_its, pf_its, newton_its = 1,0,0,0,0
     is_proj, is_xBs = [], []
 
-    puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, 1, newton_its, pf_its, hik_its)
+    puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, true, 1, newton_its, pf_its, hik_its)
     h1c = h1(Q, uB, uᵢ)
     append!(h1s, h1c)
 
@@ -281,12 +295,105 @@ function newtonss(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10, tol=IN
         δuN = dzh.single_fe_functions[1]
         uN = FEFunction(Vu, uᵢ.free_values[:] + δuN.free_values[:])
 
-        puN, TN, SN, newton_its, pf_its, hik_its = inner_solve(Q, uN, Tᵢ, proj_rc, tol, bt, PF, 1e-2, newton_its, pf_its, hik_its)
+        puN, TN, SN, newton_its, pf_its, hik_its = inner_solve(Q, uN, Tᵢ, proj_rc, tol, bt, PF, true, 1e-2, newton_its, pf_its, hik_its)
 
         h1N = h1(Q, uN, SN)
 
         if globalization == true
-            puB, TB, SB, newton_its, pf_its, hik_its = inner_solve(Q, uB, Tᵢ, proj_rc, tol, bt, PF, 1e-2, newton_its, pf_its, hik_its)
+            puB, TB, SB, newton_its, pf_its, hik_its = inner_solve(Q, uB, Tᵢ, proj_rc, tol, bt, PF, true, 1e-2, newton_its, pf_its, hik_its)
+
+            h1B = h1(Q, uB, SB)
+            h1B < h1N ? print("H¹ norms = ($h1B, $h1N), uB superior.\n\n") : print("H¹ norms = ($h1B, $h1N), uN superior.\n\n")
+
+            is_xB = h1B < h1N ? true : false
+            append!(is_xBs, is_xB)
+
+            h1c, uᵢ, puᵢ, Tᵢ, uB = is_xB ? (h1B, uB, puB, TB, SB) : (h1N, uN, puN, TN, SN)
+        else
+            h1c, uᵢ, puᵢ, Tᵢ, uB = h1N, uN, puN, TN, SN
+        end
+
+        append!(h1s, h1c)
+        append!(zhs, [[uᵢ, Tᵢ]])
+        outer_its += 1
+
+    end
+    append!(zhs, [[uB, Tᵢ]])
+    its = (outer_its, newton_its, pf_its, hik_its)
+    is = (is_proj, is_xBs)
+    return (zhs, h1s, its, is)
+end
+
+function moreau_yosida_newton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; ρ=1e-5, max_its=10, inner_max_its=400, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true)
+    
+    Uu, Vu = Q.fe_space_u
+    UT, VT = Q.fe_space_T
+
+    amy, jmy = Q.amy
+
+    U, V = MultiFieldFESpace([Uu, UT, Uu]), MultiFieldFESpace([Vu, VT, Vu])
+    
+    zhs, h1s = [], []
+    h1c, outer_its, hik_its, pf_its, newton_its = 1,0,0,0,0
+    is_proj, is_xBs = [], []
+
+    # puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, false, ρ, newton_its, pf_its, hik_its)
+    
+    (Tᵢ, it) = Φ(Q, uᵢ, T₀=Tᵢ, bt=true, tol=tol); newton_its+=it;
+    uᵢ_ = FEFunction(Vu, uᵢ.free_values[:])
+    (uB, it) = Moreau_Yosida_it(Q, Tᵢ, u₀=uᵢ_, ρ=ρ, bt=true, tol=tol, max_iter=inner_max_its); pf_its+=it;
+
+    h1c = h1(Q, uB, uᵢ)
+    append!(h1s, h1c)
+
+    ds(u) = dσ(u,ρ)/ρ
+
+    while outer_its < max_its && h1c > tol
+        R = uᵢ - uB
+
+        u_norm = Xnorm(Q, uᵢ)
+        r, c = proj_rc
+
+        if u_norm ≤ r
+            print("\n|u| ≤ r.\n")
+            b((du, ξ, w), (v, ζ, q)) = amy((du, ξ, w), (v, ζ, q), R)
+            jb((du, ξ, w), (ddu, dξ, dw), (v, ζ, q)) = jmy((du, ξ, w), (ddu, dξ, dw), (v, ζ, q), uᵢ, Tᵢ, ds)
+            append!(is_proj, false)
+        else
+            error("Projection not implemented for Moreau-Yosida Newton.")
+        end
+
+        print("\nMoreau-Yosida Newton step.\n")
+        op = FEOperator(b, jb, U, V)
+        # zh = FEFunction(U, [uᵢ.free_values; Tᵢ.free_values; uᵢ.free_values])
+        # zh = FEFunction(U, [uᵢ.free_values; Tᵢ.free_values; uᵢ.free_values])
+        # zN = newton(op, zh, max_iter=100, damping=1, tol=1e-7);
+        # δuN = zN.single_fe_functions[1]
+        # uN = FEFunction(Vu, uᵢ.free_values + δuN.free_values)
+
+        zh = FEFunction(U, [uᵢ.free_values[:]; zeros(VT.nfree+Vu.nfree)])
+
+        res, J  = Gridap.Algebra.residual_and_jacobian(op, zh);
+        dz = -J \ res
+        dzh = FEFunction(zh.fe_space, dz)
+        δuN = dzh.single_fe_functions[1]
+        uN = FEFunction(Vu, uᵢ.free_values[:] + δuN.free_values[:])
+
+        # puN, TN, SN, newton_its, pf_its, hik_its = inner_solve(Q, uN, Tᵢ, proj_rc, tol, bt, PF, false, ρ, newton_its, pf_its, hik_its)
+        (TN, it) = Φ(Q, uN, T₀=Tᵢ, bt=true, tol=tol); newton_its+=it;
+        uN_ = FEFunction(Vu, uN.free_values[:])
+        (SN, it) = Moreau_Yosida_it(Q, TN, u₀=uN_, ρ=ρ, bt=true, tol=tol, max_iter=inner_max_its); pf_its+=it;
+        puN = uN
+
+        h1N = h1(Q, uN, SN)
+
+        if globalization == true
+            # puB, TB, SB, newton_its, pf_its, hik_its = inner_solve(Q, uB, Tᵢ, proj_rc, tol, bt, PF, false, ρ, newton_its, pf_its, hik_its)
+
+            (TB, it) = Φ(Q, uB, T₀=Tᵢ, bt=true, tol=tol); newton_its+=it;
+            uB_ = FEFunction(Vu, uB.free_values[:])
+            (SB, it) = Moreau_Yosida_it(Q, TB, u₀=uB_, ρ=ρ, bt=true, tol=tol, max_iter=inner_max_its); pf_its+=it;
+            puB = uB
 
             h1B = h1(Q, uB, SB)
             h1B < h1N ? print("H¹ norms = ($h1B, $h1N), uB superior.\n\n") : print("H¹ norms = ($h1B, $h1N), uN superior.\n\n")

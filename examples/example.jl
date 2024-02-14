@@ -24,7 +24,7 @@ Q = GeneralizedThermoformingQVI(dΩ, k, Φ₀, ϕ, Ψ₀, ψ, g, dg, f, Uu, UT)
 uᵢ = FEFunction(Vu, ones(Vu.nfree))
 Tᵢ = FEFunction(VT, ones(VT.nfree))
 (zhs1, h1_1, its_1) = fixed_point(Q, uᵢ, Tᵢ; max_its=50, min_its=0, tol=1e-20, proj_rc=(Inf, 0), bt=false, PF=false, ρ0=1)
-(zhs3, h1_3, its_3, is_3) = newtonss(Q, uᵢ, Tᵢ; max_its=100, tol=1e-20, globalization=true, proj_rc=(Inf,0.0), PF=false, bt=false);
+(zhs3, h1_3, its_3, is_3) = semismoothnewton(Q, uᵢ, Tᵢ; max_its=100, tol=1e-20, globalization=true, proj_rc=(Inf,0.0), PF=false, bt=false);
 
 
 uh = zhs1[its_1[1]][1]
