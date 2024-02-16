@@ -1,4 +1,5 @@
 import LinearAlgebra: Diagonal
+# include("deflation.jl")
 # import LinearAlgebra: cond
 ## Newton
 
@@ -14,13 +15,13 @@ function defl_τ(u, du, us, M)
     deflation_step_adjustment(u, du, us, M)
 end
 
-function newton(op, uh; tol=1e-12, max_iter=1000, damping=1, us=[], M=[], info=false)
+function newton(op, uh; tol=1e-12, max_iter=1000, damping=1, us=[], M=[], info=false, show_trace=true)
     its, res = 0, 1.
 
     us_cfs = isempty(us) ? [] : [u.free_values[:] for u in us]
     
     res, J  = Gridap.Algebra.residual_and_jacobian(op, uh)
-    print("Newton: Iteration $its, residual norm = $(norm(res))\n")
+    show_trace && print("Newton: Iteration $its, residual norm = $(norm(res))\n")
     ucfs = uh.free_values[:]
     vh = FEFunction(uh.fe_space,ucfs)
 
@@ -38,7 +39,7 @@ function newton(op, uh; tol=1e-12, max_iter=1000, damping=1, us=[], M=[], info=f
         vh = FEFunction(uh.fe_space,cfs)
 
         res, J  = Gridap.Algebra.residual_and_jacobian(op, vh)
-        print("Newton: Iteration $its, residual norm = $(norm(res))\n")
+        show_trace && print("Newton: Iteration $its, residual norm = $(norm(res))\n")
     end
 
     if info == true
@@ -73,7 +74,7 @@ function project(x, lb, ub)
     return b
 end
 
-function bm(op, uh, lb::AbstractVector{T}, ub::AbstractVector{T}; us::AbstractVector=[], M=[], tol::T=1e-9, max_iter::Int=1000, damping=1, info=false) where T
+function bm(op, uh, lb::AbstractVector{T}, ub::AbstractVector{T}; us::AbstractVector=[], M=[], tol::T=1e-9, max_iter::Int=1000, damping=1, info=false, show_trace=true) where T
 
     x = uh.free_values[:]
     known_roots = [u.free_values[:] for u in us]
@@ -94,7 +95,7 @@ function bm(op, uh, lb::AbstractVector{T}, ub::AbstractVector{T}; us::AbstractVe
     inactive  = findall(x->x!=0, tmp_index)
 
     norm_residual_Ω = norm(reduced_residual(r, x, lb, ub))
-    print("BM: Iteration 0, residual norm = $norm_residual_Ω\n")
+    show_trace && print("BM: Iteration 0, residual norm = $norm_residual_Ω\n")
 
     n = length(x)
 
@@ -149,11 +150,11 @@ function bm(op, uh, lb::AbstractVector{T}, ub::AbstractVector{T}; us::AbstractVe
         inactive  = findall(x->x!=0, index2)
 
         iter += 1
-        print("BM: Iteration $iter, residual norm = $norm_residual_Ω\n")
+        show_trace && print("BM: Iteration $iter, residual norm = $norm_residual_Ω\n")
     end
     
     if iter == max_iter
-        print("Iteration max reached")
+        show_trace && print("BM: Iteration max reached")
         # disp(normResidualOmega)
     end
     if info == true
@@ -165,7 +166,7 @@ end
 
 ## HIK
 
-function hik(op, uh, lb::AbstractArray{T}, ub; us::AbstractVector=[], M=[], tol::T=1e-9, max_iter::Int=1000, damping=1, info=false) where T
+function hik(op, uh, lb::AbstractArray{T}, ub; us::AbstractVector=[], M=[], tol::T=1e-9, max_iter::Int=1000, damping=1, info=false, show_trace=true) where T
     
     x = uh.free_values[:]
 
@@ -201,7 +202,7 @@ function hik(op, uh, lb::AbstractArray{T}, ub; us::AbstractVector=[], M=[], tol:
     norm_residual_Ω = norm(reduced_residual(r, x, lb, ub))
     # %normResidualOmega = norm(dual - max(zeros(n,1), dual+x-ub) - max(zeros(n,1), dual-x-lb));
     # %normResidualOmega = normResidualOmega + norm(evaluatedResidual+dual);
-    print("HIK: Iteration 0, residual norm = $norm_residual_Ω\n")
+    show_trace && print("HIK: Iteration 0, residual norm = $norm_residual_Ω\n")
     
     
     while (norm_residual_Ω) > tol && (iter < max_iter)
@@ -255,11 +256,11 @@ function hik(op, uh, lb::AbstractArray{T}, ub; us::AbstractVector=[], M=[], tol:
 
 
         iter += 1
-        print("HIK: Iteration $iter, residual norm = $norm_residual_Ω\n")
+        show_trace && print("HIK: Iteration $iter, residual norm = $norm_residual_Ω\n")
     end
     
     if iter == max_iter
-        print("Iteration max reached")
+        show_trace && print("HIK: Iteration max reached")
         # disp(normResidualOmega)
     end
     if info == true

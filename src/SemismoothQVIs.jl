@@ -3,7 +3,7 @@ module SemismoothQVIs
 using Gridap, LineSearches, LinearAlgebra
 
 export GeneralizedThermoformingQVI,
-    fixed_point, semismoothnewton, moreau_yosida_newton, h1,
+    fixed_point, semismoothnewton, moreau_yosida_newton, h1, EOC
     FEM_1D_model, FEM_2D_model,
     latex_table
 

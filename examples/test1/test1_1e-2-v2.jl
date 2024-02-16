@@ -8,7 +8,7 @@ dΩ, Uu, Vu, UT, VT = FEM_1D_model(n) # Piecewise linear FEM discretization on (
 k = 1
 Φ₀ = interpolate_everywhere(x->max(0, abs(x[1]-0.5)-0.25), VT)
 Ψ₀ = interpolate_everywhere(x->1.0, VT)
-α₁, α₂ = 1+1/π, 1.01
+α₁, α₂ = 1e-2, 1e-2
 ϕ = interpolate_everywhere(x->sin(π*x[1])/α₁, UT)
 ψ = ϕ
 f = interpolate_everywhere(x->π^2*sin(π*x[1]) + max(0, -abs(x[1] - 0.625) + 0.125), Uu)
@@ -26,7 +26,7 @@ T₀ = interpolate_everywhere(x->5.0, UT)
 J = Gridap.Algebra.jacobian(FEOperator(Q.au0..., Uu, Vu), interpolate_everywhere(x->0.0, Uu))
 
 errs1, errs3, eocs1, eocs3 = [], [], [], []
-for (u₀, j) in zip([interpolate_everywhere(x->0.0, Uu), FEFunction(Vu, J \ f.free_values)], [18,13])
+for (u₀, j) in zip([interpolate_everywhere(x->0.0, Uu), FEFunction(Vu, J \ f.free_values)], [30,30])
     # fixed point iteration #13
     (zhs1, h1_1, its_1) = fixed_point(Q, u₀, T₀; max_its=j, tol=1e-13,  ρ0=1, PF=false, show_inner_trace=false);
     # Semismooth Newton method
@@ -46,21 +46,21 @@ for i in 1:2
         linestyle=ls[i],
         marker=:square,
         yscale=:log10,
-        title=L"\alpha_1 = 1+\pi^{-1}, \alpha_2 = 101/100",
-        label="Semismooth Newton  "*u0string[i],
+        title=L"\alpha_1 = 10^{-2}, \alpha_2 = 10^{-2}",
+        label="SSN  "*u0string[i],
         xlabel="Iterations" * L" $i$",
         ylabel=L"\Vert u_{i, h} - \bar u \, \Vert_{H^1_0(0,1)}",
         xlabelfontsize=15, ylabelfontsize=15, legendfontsize=8,xtickfontsize=10,ytickfontsize=10,
-        yticks=10.0.^(-7:0), #[1e-7,1e-6, 1e-5, 1e-4, 1e-3, 1e-2],
-        legend=:topright,
-        ylim=[3e-8,1e0],
-        xticks=1:18,
+        yticks=10.0.^(-7:1), #[1e-7,1e-6, 1e-5, 1e-4, 1e-3, 1e-2],
+        legend=:bottomright,
+        ylim=[1e-7,1e1],
+        xticks=0:5:50,
     )
 end
 display(p)
-lim = 1; [annotate!(x+1.5, y+1e-7, Plots.text( "EOC=$(round(eoc3[i], digits=2))", 12)) for (i, x, y) in zip(1:lim, 3:lim+2, errs3[2][3:lim+2])]
+lim = 7; [annotate!(x+2.2, y, Plots.text( "EOC=$(round(eocs3[2][i], digits=2))", 8)) for (i, x, y) in zip(1:lim, 3:lim+2, errs3[2][3:lim+2])]
 plot!()
-Plots.savefig("test1-convergence.pdf")
+Plots.savefig("test1-convergence-v2.pdf")
 
 # Extract final solution
 uh = zhs1[its_1[1]][1]

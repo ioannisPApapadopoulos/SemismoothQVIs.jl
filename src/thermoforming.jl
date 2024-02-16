@@ -28,8 +28,10 @@ struct GeneralizedThermoformingQVI{T}
     fe_space_T::Tuple{FESpace, FESpace}
 end
 
-_inner_X(dΩ, u, h) = sum(∫(∇(u) ⋅ ∇(h) + u ⋅ h)*dΩ)
-_dpB = (dΩ, h, u, ur) -> ur[2]/ur[1] * ( h - ((h->_inner_X(dΩ, u, h)) ∘ h) ⋅ u /ur[1])
+Xinner(Q::GeneralizedThermoformingQVI{T}, u, v) where T = sum(∫(∇(u) ⋅ ∇(v))*Q.dΩ)
+Xnorm(Q::GeneralizedThermoformingQVI{T}, u) where T = sqrt(Xinner(Q, u, u))
+_inner_X(dΩ, u, h) = sum(∫(∇(u) ⋅ ∇(h))*dΩ)
+_dpB = (dΩ, h, u, ur) -> ur[2]/ur[1] * ( h - ((h->_inner_X(dΩ, u, h)) ∘ h) ⋅ u /ur[1]^2)
 
 function GeneralizedThermoformingQVI(dΩ::Gridap.CellData.GenericMeasure, k::T, Φ₀::Gridap.FESpaces.SingleFieldFEFunction,
     ϕ::Gridap.FESpaces.SingleFieldFEFunction,  Ψ₀::Gridap.FESpaces.SingleFieldFEFunction,
@@ -61,7 +63,7 @@ function GeneralizedThermoformingQVI(dΩ::Gridap.CellData.GenericMeasure, k::T, 
         ddu ⋅ v - ψ ⋅ dξ ⋅ v - dw ⋅ v
         + _dpB(dΩ, ddu, uh, ur) ⋅ pv - dpu ⋅ pv
         + AΦ(dξ, ζ, puh, Th) + (dg ∘ (Ψ₀ + ψ ⋅ Th - puh)) ⋅ dpu ⋅ ζ
-        + ∇(dw) ⋅ ∇(q) + ϕ ⋅ ∇(dξ) ⋅ ∇(q) + dξ ⋅ ∇(ϕ) ⋅ ∇(q)
+        + ∇(dw) ⋅ ∇(q) + ψ ⋅ ∇(dξ) ⋅ ∇(q) + dξ ⋅ ∇(ψ) ⋅ ∇(q)
     )*dΩ
 
     AS(w, q, uh, Th, ds) = ∇(w) ⋅ ∇(q) + (ds ∘ (uh - Φ₀ - ϕ ⋅ Th)) ⋅ w ⋅ q
@@ -100,23 +102,20 @@ function dσ(u, ρ)
     end
 end
 
-Xinner(Q::GeneralizedThermoformingQVI{T}, u, v) where T = sum(∫(∇(u) ⋅ ∇(v))*Q.dΩ)
-Xnorm(Q::GeneralizedThermoformingQVI{T}, u) where T = sqrt(Xinner(Q, u, u))
-
-function projectionB(Q::GeneralizedThermoformingQVI{T}, u, proj_rc) where T
+function projectionB(Q::GeneralizedThermoformingQVI{T}, u, proj_rc; show_trace=true) where T
     Uu = first(Q.fe_space_u)
     r, c = proj_rc
     u_norm = Xnorm(Q, u-c)
     if u_norm ≤ r
-        print("No projection\n")
+        show_trace && print("No projection\n")
         return u
     else
-        print("Projection, u_norm=$u_norm\n")
+        show_trace && print("Projection, u_norm=$u_norm\n")
         return FEFunction(Uu, r * (u.free_values[:] .- c) / u_norm)
     end
 end
 
-function Φ(Q::GeneralizedThermoformingQVI, uh; T₀=[], bt=true, tol=IN_TOL)
+function Φ(Q::GeneralizedThermoformingQVI, uh; T₀=[], bt=true, tol=IN_TOL, show_trace=true)
     aT, jT = Q.aT
     UT, VT = Q.fe_space_T
 
@@ -124,9 +123,9 @@ function Φ(Q::GeneralizedThermoformingQVI, uh; T₀=[], bt=true, tol=IN_TOL)
     jbT(Th, dTh, R) = jT(Th, dTh, R, uh)
     opT = FEOperator(bT, jbT, UT, VT)
     if bt == false
-        T, its_T = newton(opT, T₀, max_iter=400, damping=1, tol=IN_TOL, info=true)
+        T, its_T = newton(opT, T₀, max_iter=400, damping=1, tol=IN_TOL, info=true, show_trace=show_trace)
     else
-        nls = NLSolver(show_trace=true, method=:newton, linesearch=LineSearches.BackTracking(), ftol=tol, xtol=10*eps())
+        nls = NLSolver(show_trace=show_trace, method=:newton, linesearch=LineSearches.BackTracking(), ftol=tol, xtol=10*eps())
         solver = FESolver(nls)
         T, its_T = solve!(FEFunction(VT, T₀.free_values[:]),solver,opT)
         its_T = its_T.result.iterations
@@ -134,7 +133,7 @@ function Φ(Q::GeneralizedThermoformingQVI, uh; T₀=[], bt=true, tol=IN_TOL)
     return (T, its_T)
 end
 
-function Moreau_Yosida_it(Q::GeneralizedThermoformingQVI, T; u₀=[], ρ=1e-5, bt=true, tol=IN_TOL, max_iter=400)
+function Moreau_Yosida_it(Q::GeneralizedThermoformingQVI, T; u₀=[], ρ=1e-5, bt=true, tol=IN_TOL, max_iter=400, show_trace=true)
 
     s(u) = σ(u,ρ)/ρ 
     ds(u) = dσ(u,ρ)/ρ
@@ -146,9 +145,9 @@ function Moreau_Yosida_it(Q::GeneralizedThermoformingQVI, T; u₀=[], ρ=1e-5, b
     jbu(uh, duh, v) = ju(uh, duh, v, ds, T)
     opu = FEOperator(bu, jbu, Uu, Vu)
     if bt == false
-        uB, its_u = newton(opu, u₀, max_iter=max_iter, damping=1, tol=tol, info=true);
+        uB, its_u = newton(opu, u₀, max_iter=max_iter, damping=1, tol=tol, info=true, show_trace=show_trace);
     else
-        nls = NLSolver(show_trace=true, method=:newton, linesearch=LineSearches.BackTracking(), ftol=tol, xtol=10*eps())
+        nls = NLSolver(show_trace=show_trace, method=:newton, linesearch=LineSearches.BackTracking(), ftol=tol, xtol=10*eps())
         solver = FESolver(nls)
         uB, its_u = solve!(u₀,solver,opu)
         its_u = its_u.result.iterations
@@ -156,13 +155,13 @@ function Moreau_Yosida_it(Q::GeneralizedThermoformingQVI, T; u₀=[], ρ=1e-5, b
     return (uB, its_u)
 end
 
-function Path_Following_S(Q::GeneralizedThermoformingQVI, Tᵢ; u₀=[], ρ0=1, max_its=20, tol=IN_TOL, bt=true)
+function Path_Following_S(Q::GeneralizedThermoformingQVI, Tᵢ; u₀=[], ρ0=1, max_its=20, tol=IN_TOL, bt=true, show_trace=true)
     Uu = first(Q.fe_space_u)
     uh = FEFunction(Uu, u₀.free_values[:])
     its = 0
     for ρ in [ρ0*10.0^(-i) for i in 0:5]
-        print("\n Considering ρ = $ρ.\n")
-        (uh, it) = Moreau_Yosida_it(Q, Tᵢ, u₀=uh, ρ=ρ, bt=bt, tol=tol)
+        show_trace && print("\n Considering ρ = $ρ.\n")
+        (uh, it) = Moreau_Yosida_it(Q, Tᵢ, u₀=uh, ρ=ρ, bt=bt, tol=tol, show_trace=show_trace)
         its += it
         if ρ < 1e-6
             break
@@ -171,42 +170,42 @@ function Path_Following_S(Q::GeneralizedThermoformingQVI, Tᵢ; u₀=[], ρ0=1, 
     return (uh, its)
 end
 
-function bm_S(Q::GeneralizedThermoformingQVI,Tᵢ; u₀=[])
+function bm_S(Q::GeneralizedThermoformingQVI,Tᵢ; u₀=[],show_trace=true)
     au0, ju0 = Q.au0
     Uu, Vu = Q.fe_space_u
     opu = FEOperator(au0, ju0, Uu, Vu)
     lb = -1e10*ones(Vu.nfree)
     ub = interpolate_everywhere(Q.Φ₀ + Q.ϕ ⋅ Tᵢ, Uu).free_values
-    uB, its_u = bm(opu, u₀, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true);
+    uB, its_u = bm(opu, u₀, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true, show_trace=show_trace);
     return (uB, its_u)
 end
 
-function hik_S(Q::GeneralizedThermoformingQVI,Tᵢ; u₀=[])
+function hik_S(Q::GeneralizedThermoformingQVI,Tᵢ; u₀=[], show_trace=true)
     au0, ju0 = Q.au0
     Uu, Vu = Q.fe_space_u
     opu = FEOperator(au0, ju0, Uu, Vu)
     lb = -1e10*ones(Vu.nfree)
     ub = interpolate_everywhere(Q.Φ₀ + Q.ϕ ⋅ Tᵢ, Uu).free_values
-    uB, its_u = hik(opu, u₀, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true);
+    uB, its_u = hik(opu, u₀, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true, show_trace=show_trace);
     return (uB, its_u)
 end
 
-function inner_solve(Q::GeneralizedThermoformingQVI, u, T_, proj_rc::Tuple{Number, Number}, tol::Number, bt::Bool, PF::Bool, FS::Bool, ρ0::Number, newton_its::Int, pf_its::Int, hik_its::Int)
-    print("\n   Project u.\n")
-    pu = projectionB(Q, u, proj_rc)
-    print("\n   Solve for T.\n")
-    (T, it) = Φ(Q, pu, T₀=T_,tol=tol, bt=bt); newton_its+=it;
+function inner_solve(Q::GeneralizedThermoformingQVI, u, T_, proj_rc::Tuple{Number, Number}, tol::Number, bt::Bool, PF::Bool, FS::Bool, ρ0::Number, newton_its::Int, pf_its::Int, hik_its::Int; show_trace=true)
+    show_trace && print("\n   Project u.\n")
+    pu = projectionB(Q, u, proj_rc, show_trace=show_trace)
+    show_trace && print("\n   Solve for T.\n")
+    (T, it) = Φ(Q, pu, T₀=T_,tol=tol, bt=bt, show_trace=show_trace); newton_its+=it;
 
     if PF==true
-        print("\n   Path-following MY for u.\n")
-        (S, it) = Path_Following_S(Q, T, u₀=pu, tol=IN_TOL, bt=bt, ρ0=ρ0); pf_its+=it;
+        show_trace && print("\n   Path-following MY for u.\n")
+        (S, it) = Path_Following_S(Q, T, u₀=pu, tol=IN_TOL, bt=bt, ρ0=ρ0, show_trace=show_trace); pf_its+=it;
     else
         S = pu
     end
 
     if FS==true
-        print("\n   HIK feasibility step for u.\n")
-        (S, it) = hik_S(Q, T, u₀=S); hik_its+=it;
+        show_trace && print("\n   HIK feasibility step for u.\n")
+        (S, it) = hik_S(Q, T, u₀=S, show_trace=show_trace); hik_its+=it;
     end
 
     return pu, T, S, newton_its, pf_its, hik_its
@@ -215,19 +214,22 @@ end
 
 h1(Q::GeneralizedThermoformingQVI, u, v) = sqrt(sum(∫((u-v) ⋅ (u-v) + ∇(u-v) ⋅ ∇(u-v))*Q.dΩ))
 
-function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min_its=0, tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, ρ0=1)
+function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min_its=0, tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, ρ0=1, show_trace=true, show_inner_trace=true)
 
     Uu, Vu = Q.fe_space_u
     h1_1, zhs = [], []
     newton_its, pf_its, hik_its, outer_its =  0, 0, 0, 0
     while outer_its < max_its
 
-        _, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, true, ρ0, newton_its, pf_its, hik_its)
+        puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, true, ρ0, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
-        append!(h1_1, h1(Q, uB, uᵢ))
+        # TODO: is this the correct error to record?
+        append!(h1_1, h1(Q, uB, uᵢ)+h1(Q, puᵢ, uᵢ))
         uᵢ = FEFunction(Vu, uB.free_values[:])
   
         outer_its += 1
+        show_trace && print("Fixed point: Iteration $outer_its, ‖uB - uᵢ‖ + ‖P ∘ uᵢ - uᵢ‖ = $(last(h1_1))\n")
+
         append!(zhs, [[uᵢ, Tᵢ]])
         if last(h1_1) ≤ tol && outer_its ≥ min_its
             break
@@ -239,8 +241,9 @@ function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min
     return (zhs, h1_1, its)
 end
 
-function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true)
+function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true, FS=true, show_trace=true, show_inner_trace=true, X=[])
 
+    FS == false && @warn("Are you sure you want FS=false? This will prevent superlinear convergence.")
     Uu, Vu = Q.fe_space_u
     UT, VT = Q.fe_space_T
 
@@ -254,7 +257,7 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10
     h1c, outer_its, hik_its, pf_its, newton_its = 1,0,0,0,0
     is_proj, is_xBs = [], []
 
-    puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, true, 1, newton_its, pf_its, hik_its)
+    puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, FS, 1, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
     h1c = h1(Q, uB, uᵢ)
     append!(h1s, h1c)
 
@@ -267,12 +270,12 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10
         u_norm = Xnorm(Q, uᵢ)
 
         if u_norm ≤ r
-            print("\n|u| ≤ r.\n")
+            print("‖u‖ ≤ r.  ")
             b((du, ξ, w), (v, ζ, q)) = asn((du, ξ, w), (v, ζ, q), R)
             jb((du, ξ, w), (ddu, dξ, dw), (v, ζ, q)) = jsn((du, ξ, w), (ddu, dξ, dw), (v, ζ, q), uᵢ, Tᵢ)
             append!(is_proj, false)
         else
-            print("\n|u| > r.\n")
+            print("‖u‖ > r.  ")
             bp((du, pu, ξ, w), (v, pv, ζ, q)) = asnp((du, pu, ξ, w), (v, pv, ζ, q), R)
             jbp((du, pu, ξ, w), (ddu, dpu, dξ, dw), (v, pv, ζ, q)) = jsnp((du, pu, ξ, w), (ddu, dpu, dξ, dw), (v, pv, ζ, q), uᵢ, puᵢ, Tᵢ, (u_norm, r))
             append!(is_proj, true)
@@ -280,7 +283,7 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10
 
         m, Ũ, Ṽ, b̃, jb̃ = u_norm ≤ r ? (1, U, V, b, jb) : (2, Up, Vp, bp, jbp)
 
-        print("Semismooth Newton step.\n")
+        # show_trace && print("Semismooth Newton step.\n")
         Ah = interpolate_everywhere(Q.Φ₀ + Q.ϕ ⋅ Tᵢ - uB, Vu)
         A = findall(Ah.free_values .≤ 0) .+ (m*Vu.nfree + VT.nfree)
         inac = setdiff(1:(VT.nfree+(m+1)*Vu.nfree), A)
@@ -293,17 +296,22 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10
         dz[inac] = -J[inac,inac] \ res[inac]
         dzh = FEFunction(zh.fe_space, dz)
         δuN = dzh.single_fe_functions[1]
+
+        # τ = defl_τ(uᵢ.free_values[:], δuN.free_values[:], [zeros(Vu.nfree)], X)
+
         uN = FEFunction(Vu, uᵢ.free_values[:] + δuN.free_values[:])
 
-        puN, TN, SN, newton_its, pf_its, hik_its = inner_solve(Q, uN, Tᵢ, proj_rc, tol, bt, PF, true, 1e-2, newton_its, pf_its, hik_its)
+        puN, TN, SN, newton_its, pf_its, hik_its = inner_solve(Q, uN, Tᵢ, proj_rc, tol, bt, PF, FS, 1e-2, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
-        h1N = h1(Q, uN, SN)
+        # TODO: is this the correct error to be tracking?
+        h1N = h1(Q, uN, SN) + h1(Q, uN, puN)
 
         if globalization == true
-            puB, TB, SB, newton_its, pf_its, hik_its = inner_solve(Q, uB, Tᵢ, proj_rc, tol, bt, PF, true, 1e-2, newton_its, pf_its, hik_its)
+            puB, TB, SB, newton_its, pf_its, hik_its = inner_solve(Q, uB, Tᵢ, proj_rc, tol, bt, PF, FS, 1e-2, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
-            h1B = h1(Q, uB, SB)
-            h1B < h1N ? print("H¹ norms = ($h1B, $h1N), uB superior.\n\n") : print("H¹ norms = ($h1B, $h1N), uN superior.\n\n")
+            # TODO: is this the correct error to be tracking?
+            h1B = h1(Q, uB, SB) + h1(Q, uB, puB)
+            show_trace && h1B < h1N ? print("H¹ norms = ($h1B, $h1N), uB superior.\n") : print("H¹ norms = ($h1B, $h1N), uN superior.\n")
 
             is_xB = h1B < h1N ? true : false
             append!(is_xBs, is_xB)
@@ -316,6 +324,7 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10
         append!(h1s, h1c)
         append!(zhs, [[uᵢ, Tᵢ]])
         outer_its += 1
+        show_trace && print("Semismooth Newton: Iteration $outer_its, ‖uᵢ₊₁ - uᵢ‖ + ‖P ∘ uᵢ - uᵢ‖ = $h1c\n")
 
     end
     append!(zhs, [[uB, Tᵢ]])
@@ -415,4 +424,12 @@ function moreau_yosida_newton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; ρ=1e-
     its = (outer_its, newton_its, pf_its, hik_its)
     is = (is_proj, is_xBs)
     return (zhs, h1s, its, is)
+end
+
+function EOC(Q::GeneralizedThermoformingQVI, us::AbstractVector{<:Gridap.FESpaces.SingleFieldFEFunction}, u::Gridap.FESpaces.SingleFieldFEFunction)
+    errs = zeros(length(us))
+    for i in 1:lastindex(us)
+        errs[i] = Xnorm(Q, us[i]-u) 
+    end
+    errs, log.( errs[3:end] ./ errs[2:end-1] ) ./ log.( errs[2:end-1] ./ errs[1:end-2] )
 end
