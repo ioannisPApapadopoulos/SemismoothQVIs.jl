@@ -2,7 +2,7 @@ using Gridap, SemismoothQVIs
 using Plots, LaTeXStrings
 
 n = 2000 # dofs, h = 1/n
-dΩ, Uu, Vu, UT, VT = FEM_1D_model(n) # Piecewise linear FEM discretization on (0,1)
+dΩ, Uu, Vu, UT, VT = fem_model(n) # Piecewise linear FEM discretization on (0,1)
 
 # Thermoforming parameter choices
 k = 1

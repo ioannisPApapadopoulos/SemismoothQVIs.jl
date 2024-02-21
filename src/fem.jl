@@ -1,6 +1,6 @@
 using Gridap
 
-function FEM_1D_model(n::Int)
+function fem_model(n::Int)
     model = CartesianDiscreteModel((0,1),(n,))
     labels = get_face_labeling(model)
     p = 1
@@ -15,9 +15,9 @@ function FEM_1D_model(n::Int)
     return (dΩ, Uu, Vu, UT, VT)
 end
 
-function FEM_2D_model(n::Int)
+function fem_model(nx::Int, ny::Int)
     domain = (0,1,0,1)
-    partition = (n,n)
+    partition = (nx,ny)
     model = CartesianDiscreteModel(domain,partition)
     labels = get_face_labeling(model)
     p = 1

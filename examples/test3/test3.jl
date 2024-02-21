@@ -2,7 +2,7 @@ using Gridap, SemismoothQVIs
 using Plots, LaTeXStrings
 
 n = 50
-dΩ, Uu, Vu, UT, VT = FEM_2D_model(n)
+dΩ, Uu, Vu, UT, VT = fem_model(n, n)
 
 include("test3_parameters.jl")
 
@@ -10,13 +10,13 @@ Q = GeneralizedThermoformingQVI(dΩ, k, Φ₀, ϕ, Ψ₀, ψ, g, dg, f, Uu, UT)
 uᵢ = FEFunction(Vu, zeros(Vu.nfree))
 Tᵢ = FEFunction(VT, ones(VT.nfree))
 
-(zhs1, h1_1, its_1) = fixed_point(Q, uᵢ, Tᵢ; max_its=15, min_its=0, tol=1e-20, bt=true, PF=true, ρ0=1)
-(zhs3, h1_3, its_3, is_3) = semismoothnewton(Q, uᵢ, Tᵢ; max_its=4, tol=1e-20, globalization=false, PF=true, bt=true);
+(zhs1, h1_1, its_1) = fixed_point(Q, uᵢ, Tᵢ; max_its=15, min_its=0, tol=1e-20, bt=true, PF=true, ρ0=1, show_inner_trace=false)
+(zhs3, h1_3, its_3, is_3) = semismoothnewton(Q, uᵢ, Tᵢ; max_its=4, tol=1e-20, globalization=false, PF=true, bt=true, show_inner_trace=false);
 
 
 h1_2s = []
 for ρ in [1e-2, 1e-4, 1e-6, 1e-8]
-    (zhs2, h1_2, its_2, is_2) = moreau_yosida_newton(Q, uᵢ, Tᵢ;max_its=10, inner_max_its=60, ρ=ρ, tol=1e-20, globalization=true, bt=true, PF=true);
+    (zhs2, h1_2, its_2, is_2) = moreau_yosida_newton(Q, uᵢ, Tᵢ;max_its=10, inner_max_its=60, ρ=ρ, tol=1e-20, globalization=true, bt=true, PF=true, show_inner_trace=false);
     append!(h1_2s, [h1_2])
 end
 
@@ -97,7 +97,7 @@ for (n, i) in zip(ns, 1:7)
     Tᵢ = FEFunction(VT, ones(VT.nfree))
 
     Q = GeneralizedThermoformingQVI(dΩ, k, Φ₀, ϕ, Ψ₀, ψ, g, dg, f, Uu, UT)
-    (zhs3, h1_3, its_3, is_3) = semismoothnewton(Q, uᵢ, Tᵢ; max_its=4, tol=1e-20, globalization=false);
+    (zhs3, h1_3, its_3, is_3) = semismoothnewton(Q, uᵢ, Tᵢ; max_its=4, tol=1e-20, globalization=false, show_inner_trace=false);
 
     # append!(its, its_3)
     its[i,:] .= its_3
