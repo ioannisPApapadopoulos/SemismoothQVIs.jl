@@ -24,8 +24,8 @@ Last resort: download the zip file, unzip, locate the folder and run
 ```julia
 julia> ] 
 pkg> activate /location to folder/SemismoothQVIs
-  Activating project at `\location to folder\SemismoothQVIs`
-pkg> initialize
+  Activating project at `\location to folder\SemismoothQVIs.jl`
+(SemismoothQVIs) pkg> initialize
 ```
 If it says "Activating new project" then you are in the wrong folder.
 
