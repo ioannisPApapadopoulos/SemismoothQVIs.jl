@@ -219,6 +219,7 @@ function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min
     Uu, Vu = Q.fe_space_u
     h1_1, zhs = [], []
     newton_its, pf_its, hik_its, outer_its =  0, 0, 0, 0
+    append!(zhs, [[uᵢ, Tᵢ]])
     while outer_its < max_its
 
         puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, true, ρ0, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
@@ -254,6 +255,7 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10
     Up, Vp =  MultiFieldFESpace([Uu, Uu, UT, Uu]), MultiFieldFESpace([Vu, Vu, VT, Vu])
 
     zhs, h1s = [], []
+    append!(zhs, [[uᵢ, Tᵢ]])
     h1c, outer_its, hik_its, pf_its, newton_its = 1,0,0,0,0
     is_proj, is_xBs = [], []
 

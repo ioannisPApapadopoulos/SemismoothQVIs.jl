@@ -40,8 +40,8 @@ ls = [:solid, :dash, :dashdot, :dashdotdot]
 u0string = [L"u_0 = 0", L"u_0 = (-\Delta)^{-1} f"]
 p = plot()
 for i in 1:2
-    p = Plots.plot!(1:lastindex(errs1[i]), errs1[i], linestyle=ls[i], linewidth=2, marker=:dot, label="Fixed Point  "*u0string[i], yscale=:log10,)
-    Plots.plot!(1:lastindex(errs3[i]), errs3[i],
+    p = Plots.plot!(0:lastindex(errs1[i])-1, errs1[i], linestyle=ls[i], linewidth=2, marker=:dot, label="Fixed Point  "*u0string[i], yscale=:log10,)
+    Plots.plot!(0:lastindex(errs3[i])-1, errs3[i],
         linewidth=2,
         linestyle=ls[i],
         marker=:square,
@@ -51,16 +51,18 @@ for i in 1:2
         xlabel="Iterations" * L" $i$",
         ylabel=L"\Vert u_{i, h} - \bar u \, \Vert_{H^1_0(0,1)}",
         xlabelfontsize=15, ylabelfontsize=15, legendfontsize=8,xtickfontsize=10,ytickfontsize=10,
-        yticks=10.0.^(-7:0), #[1e-7,1e-6, 1e-5, 1e-4, 1e-3, 1e-2],
+        yticks=10.0.^(-7:2:4), #[1e-7,1e-6, 1e-5, 1e-4, 1e-3, 1e-2],
         legend=:topright,
-        ylim=[3e-8,1e0],
-        xticks=1:18,
+        ylim=[3e-8,1e4],
+        xticks=0:2:18,
+        xlim=[0,18.5]
     )
 end
 display(p)
-lim = 1; [annotate!(x+1.5, y+1e-7, Plots.text( "EOC=$(round(eoc3[i], digits=2))", 12)) for (i, x, y) in zip(1:lim, 3:lim+2, errs3[2][3:lim+2])]
+lim = 2; [annotate!(x+1, y+3e-7, Plots.text( "$(round.(eocs3[2][i+1], digits=2))", 12)) for (i, x, y) in zip(0:lim-1, 2:lim+1, errs3[2][3:lim+2])]
+lim = 2; [annotate!(x, y, Plots.text( "O", 17)) for (i, x, y) in zip(0:lim-1, 2:lim+1, errs3[2][3:lim+2])]
 plot!()
-Plots.savefig("test1-convergence.pdf")
+Plots.savefig("test1a-convergence.pdf")
 
 # Extract final solution
 uh = zhs1[its_1[1]][1]

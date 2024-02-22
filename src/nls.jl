@@ -1,5 +1,5 @@
 import LinearAlgebra: Diagonal
-include("deflation.jl")
+# include("deflation.jl")
 # import LinearAlgebra: cond
 ## Newton
 
@@ -11,9 +11,9 @@ function zero_dirichlet_bcs(r, J)
     return r, J
 end
 
-function defl_τ(u, du, us, M)
-    deflation_step_adjustment(u, du, us, M)
-end
+# function defl_τ(u, du, us, M)
+#     deflation_step_adjustment(u, du, us, M)
+# end
 
 function newton(op, uh; tol=1e-12, max_iter=1000, damping=1, us=[], M=[], info=false, show_trace=true)
     its, res = 0, 1.
@@ -108,10 +108,10 @@ function bm(op, uh, lb::AbstractVector{T}, ub::AbstractVector{T}; us::AbstractVe
         #     update = -r
         # end
 
-        if ~isempty(known_roots)
-            τ = deflation_step_adjustment(x, update, known_roots, M)
-            update = τ * update
-        end
+        # if ~isempty(known_roots)
+        #     τ = deflation_step_adjustment(x, update, known_roots, M)
+        #     update = τ * update
+        # end
 
         # update = nls.LineSearch.adjust(x, update, nls.damping)
         # for α in 1.0 ./ (1:100)
@@ -218,10 +218,10 @@ function hik(op, uh, lb::AbstractArray{T}, ub; us::AbstractVector=[], M=[], tol:
         end
         update[inactive] = -J[inactive,inactive] \ cr
         
-        if ~isempty(known_roots)
-            τ = deflation_step_adjustment(x, update, known_roots, M)
-            update = τ * update
-        end
+        # if ~isempty(known_roots)
+        #     τ = deflation_step_adjustment(x, update, known_roots, M)
+        #     update = τ * update
+        # end
 
         x = x + damping*update;
         vh = FEFunction(uh.fe_space,x)
@@ -368,10 +368,10 @@ function ssls(op, uh, lb::AbstractVector{T}, ub::AbstractVector{T};
 
         update = -shiftedJacobian \ fb
         
-        if ~isempty(known_roots)
-            τ = deflation_step_adjustment(x, update, known_roots, M, p, α)
-            update =  τ * update
-        end
+        # if ~isempty(known_roots)
+        #     τ = deflation_step_adjustment(x, update, known_roots, M, p, α)
+        #     update =  τ * update
+        # end
         
         # update = nls.LineSearch.adjust(x, update, nls.damping)
         x = x + damping*update
