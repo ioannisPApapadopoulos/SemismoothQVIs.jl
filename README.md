@@ -25,7 +25,7 @@ Last resort: download the zip file, unzip, locate the folder and run
 julia> ] 
 pkg> activate /location to folder/SemismoothQVIs
   Activating project at `\location to folder\SemismoothQVIs.jl`
-(SemismoothQVIs) pkg> initialize
+(SemismoothQVIs) pkg> instantiate
 ```
 If it says "Activating new project" then you are in the wrong folder.
 
