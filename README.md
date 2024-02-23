@@ -31,16 +31,18 @@ If it says "Activating new project" then you are in the wrong folder.
 
 Checkout the examples in the examples/ folder and have fun!
 
-The solvers implemented are fixed_point, semismoothnewton &  moreau_yosida_newton.
+## Solvers
 
-fixed_point employs the algorithm uᵢ₊₁ = S(Φ(uᵢ)). This converges provided there is a contraction.
-semismoothnewton is Algorithm 1.1 in the paper.
-moreau_yosida_newton is a smoothed regularization of Algorithm 1.1/
+The solvers implemented are `fixed_point`, `semismoothnewton` &  `moreau_yosida_newton`.
+
+`fixed_point` employs the algorithm uᵢ₊₁ = S(Φ(uᵢ)). This converges provided there is a contraction.
+`semismoothnewton` is Algorithm 1 in the paper.
+`moreau_yosida_newton` is a smoothed regularization of Algorithm 1.
 
 The optional arguments in the solvers are:
 
 |Optional arguments|Type|Description|
-|:-:|:-:|:-:|
-|max_its|Integer|Maximum number of iterations of the outer solver before it is terminated.||
-|tol|Float|.|
-|globalization|Boolean (true/false)|Compute globalization iterate x_B as well as the Newton iterate x_N|Only for semismoothnewton and moreay_yosida_newton.|
+|:-:|:-:|:-:|:-:|
+|`max_its`|Integer|Maximum number of iterations of the outer solver before it is terminated.||
+|`tol`|Float|||
+|`globalization`|Boolean (true/false)|Compute globalization iterate x_B as well as the Newton iterate x_N|Only for semismoothnewton and moreay_yosida_newton.|
