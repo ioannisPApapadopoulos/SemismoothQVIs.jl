@@ -214,7 +214,7 @@ end
 
 h1(Q::GeneralizedThermoformingQVI, u, v) = sqrt(sum(∫((u-v) ⋅ (u-v) + ∇(u-v) ⋅ ∇(u-v))*Q.dΩ))
 
-function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min_its=0, tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, ρ0=1, show_trace=true, show_inner_trace=true)
+function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min_its=0, tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, show_trace=true, show_inner_trace=true)
 
     Uu, Vu = Q.fe_space_u
     h1_1, zhs = [], []
@@ -222,7 +222,7 @@ function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min
     append!(zhs, [[uᵢ, Tᵢ]])
     while outer_its < max_its
 
-        puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, true, ρ0, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
+        puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, FS, ρ0, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
         # TODO: is this the correct error to record?
         append!(h1_1, h1(Q, uB, uᵢ)+h1(Q, puᵢ, uᵢ))
@@ -242,7 +242,7 @@ function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min
     return (zhs, h1_1, its)
 end
 
-function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true, FS=true, show_trace=true, show_inner_trace=true, X=[])
+function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true, FS=true, show_trace=true, show_inner_trace=true, X=[])
 
     FS == false && @warn("Are you sure you want FS=false? This will prevent superlinear convergence.")
     Uu, Vu = Q.fe_space_u
@@ -335,7 +335,7 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=10
     return (zhs, h1s, its, is)
 end
 
-function moreau_yosida_newton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; ρ=1e-5, max_its=10, inner_max_its=400, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true)
+function moreau_yosida_newton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; ρ=1e-5, max_its=20, inner_max_its=400, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true)
     
     Uu, Vu = Q.fe_space_u
     UT, VT = Q.fe_space_T
@@ -350,7 +350,7 @@ function moreau_yosida_newton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; ρ=1e-
 
     # puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, false, ρ, newton_its, pf_its, hik_its)
     
-    (Tᵢ, it) = Φ(Q, uᵢ, T₀=Tᵢ, bt=true, tol=tol); newton_its+=it;
+    (Tᵢ, it) = Φ(Q, uᵢ, T₀=Tᵢ, bt=bt, tol=tol); newton_its+=it;
     uᵢ_ = FEFunction(Vu, uᵢ.free_values[:])
     (uB, it) = Moreau_Yosida_it(Q, Tᵢ, u₀=uᵢ_, ρ=ρ, bt=true, tol=tol, max_iter=inner_max_its); pf_its+=it;
 
@@ -391,9 +391,9 @@ function moreau_yosida_newton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; ρ=1e-
         uN = FEFunction(Vu, uᵢ.free_values[:] + δuN.free_values[:])
 
         # puN, TN, SN, newton_its, pf_its, hik_its = inner_solve(Q, uN, Tᵢ, proj_rc, tol, bt, PF, false, ρ, newton_its, pf_its, hik_its)
-        (TN, it) = Φ(Q, uN, T₀=Tᵢ, bt=true, tol=tol); newton_its+=it;
+        (TN, it) = Φ(Q, uN, T₀=Tᵢ, bt=bt, tol=tol); newton_its+=it;
         uN_ = FEFunction(Vu, uN.free_values[:])
-        (SN, it) = Moreau_Yosida_it(Q, TN, u₀=uN_, ρ=ρ, bt=true, tol=tol, max_iter=inner_max_its); pf_its+=it;
+        (SN, it) = Moreau_Yosida_it(Q, TN, u₀=uN_, ρ=ρ, bt=bt, tol=tol, max_iter=inner_max_its); pf_its+=it;
         puN = uN
 
         h1N = h1(Q, uN, SN)
