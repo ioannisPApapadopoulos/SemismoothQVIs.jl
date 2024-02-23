@@ -41,7 +41,7 @@ The solvers implemented are `fixed_point`, `semismoothnewton` &  `moreau_yosida_
 
 The optional arguments in the solvers are:
 
-|Optional arguments|Type|Description|
+|Optional arguments|Type|Description|Notes|
 |:-:|:-:|:-:|:-:|
 |`max_its`|Integer|Maximum number of iterations of the outer solver before it is terminated.||
 |`tol`|Float|||
