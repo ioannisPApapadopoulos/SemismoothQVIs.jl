@@ -1,19 +1,19 @@
 """
     NonlinearVI()
 
-Given an obstacle φ, find u ∈ H¹₀(Ω) that satisfies
-    u ≤ φ, ⟨-Δu - f - Φ(u), v - u⟩≥0 ∀ v∈H¹₀(Ω), v≤ φ.
+Given an obstacle Φ₀, find u ∈ H¹₀(Ω) that satisfies
+    u ≤ Φ₀, ⟨-Δu - f - Φ(u), v - u⟩≥0 ∀ v∈H¹₀(Ω), v≤ Φ₀.
 
 """
-IN_TOL = 1e-10
+# IN_TOL = 1e-10
 struct NonlinearVI{T}
     dΩ::Gridap.CellData.GenericMeasure
     Φ::Function
     dΦ::Function
-    φ::Gridap.FESpaces.SingleFieldFEFunction
+    Φ₀::Gridap.FESpaces.SingleFieldFEFunction
     f::Gridap.FESpaces.SingleFieldFEFunction
-    au::Tuple{Function, Function}
-    au0::Tuple{Function, Function}
+    au::Tuple{Function, Function, Function}
+    au0::Tuple{Function, Function, Function}
     asn::Tuple{Function, Function}
     asnp::Tuple{Function, Function}
     amy::Tuple{Function, Function}
@@ -22,24 +22,32 @@ end
 
 Xinner(VI::NonlinearVI{T}, u, v) where T = sum(∫(∇(u) ⋅ ∇(v))*VI.dΩ)
 Xnorm(VI::NonlinearVI{T}, u) where T = sqrt(Xinner(VI, u, u))
-_inner_X(dΩ, u, h) = sum(∫(∇(u) ⋅ ∇(h))*dΩ)
-_dpB = (dΩ, h, u, ur) -> ur[2]/ur[1] * ( h - ((h->_inner_X(dΩ, u, h)) ∘ h) ⋅ u /ur[1]^2)
+# _inner_X(dΩ, u, h) = sum(∫(∇(u) ⋅ ∇(h))*dΩ)
+# _dpB = (dΩ, h, u, ur) -> ur[2]/ur[1] * ( h - ((h->_inner_X(dΩ, u, h)) ∘ h) ⋅ u /ur[1]^2)
 
 function NonlinearVI(dΩ::Gridap.CellData.GenericMeasure, Φ::Function, dΦ::Function,
-    φ::Gridap.FESpaces.SingleFieldFEFunction, f::Gridap.FESpaces.SingleFieldFEFunction, Uu::FESpace)
+    Φ₀::Gridap.FESpaces.SingleFieldFEFunction, f::Gridap.FESpaces.SingleFieldFEFunction, Uu::FESpace)
 
-    au(uh, v, s, u_) =∫( ∇(uh) ⋅ ∇(v) +  (s ∘ (uh - φ)) ⋅ v - f ⋅ v - (Φ ∘ u_) ⋅ v) * dΩ
-    ju(uh, duh, v, ds, u_) =∫( ∇(duh) ⋅ ∇(v) +  (ds ∘ (uh - φ)) ⋅ duh ⋅ v - (dΦ ∘ u_) ⋅ duh ⋅ v) * dΩ
+
+    
+    # au0(uh, v, u_) =∫(∇(uh) ⋅ ∇(v) - (Φ ∘ u_) ⋅ v - f ⋅ v) * dΩ
+    # 
+
+    au(uh, v, s, u_) =∫( ∇(uh) ⋅ ∇(v) +  (s ∘ (uh - Φ₀)) ⋅ v - f ⋅ v - (Φ ∘ u_) ⋅ v) * dΩ
+    ju(uh, duh, v, ds) =∫( ∇(duh) ⋅ ∇(v) +  (ds ∘ (uh - Φ₀)) ⋅ duh ⋅ v) * dΩ
+    juu(uh, duh, v, ds, u_) =∫( ∇(duh) ⋅ ∇(v) +  (ds ∘ (uh - Φ₀)) ⋅ duh ⋅ v - (dΦ ∘ u_) ⋅ duh ⋅ v) * dΩ
     
     au0(uh, v, u_) =∫(∇(uh) ⋅ ∇(v) - (Φ ∘ u_) ⋅ v - f ⋅ v) * dΩ
-    ju0(uh, duh, v, u_) =∫(∇(duh) ⋅ ∇(v) - (dΦ ∘ u_) ⋅ duh ⋅ v) * dΩ
+    ju0(uh, duh, v) =∫(∇(duh) ⋅ ∇(v)) * dΩ
+    ju0u(uh, duh, v, u_) =∫(∇(duh) ⋅ ∇(v) - (dΦ ∘ u_) ⋅ duh ⋅ v) * dΩ
 
     asn((du, w), (v, q), R) = ∫(
             R ⋅ v
     )*dΩ
     jsn((du, w), (ddu, dw), (v, q), dΦu_)= ∫(
         ddu ⋅ v - dw ⋅ v
-        + ∇(dw) ⋅ ∇(q) - dΦu_ ⋅ ddu ⋅ q # + ddu ⋅ ∇(dΦu_) ⋅ ∇(q)
+        + ∇(dw) ⋅ ∇(q) - dΦu_ ⋅ ddu ⋅ q
+        # + ∇(dw) ⋅ ∇(q) - dΦu_ ⋅ ∇(ddu) ⋅ ∇(q) -  ddu ⋅ ∇(dΦu_) ⋅  ∇(q)
         # ddu ⋅ v - dξ ⋅ v - dw ⋅ v
         # + (dΦ ∘ uh) ⋅ ddu ⋅ ζ - dξ ⋅ ζ
         # + ∇(dw) ⋅ ∇(q) + ∇(dξ) ⋅ ∇(q)
@@ -66,7 +74,7 @@ function NonlinearVI(dΩ::Gridap.CellData.GenericMeasure, Φ::Function, dΦ::Fun
     # )*dΩ
 
     Vu = Uu.space
-    NonlinearVI{Float64}(dΩ, Φ, dΦ, φ, f, (au, ju), (au0, ju0), (asn, jsn), (asnp, jsnp), (asn, jmy), (Uu, Vu))
+    NonlinearVI{Float64}(dΩ, Φ, dΦ, Φ₀, f, (au, ju, juu), (au0, ju0, ju0u), (asn, jsn), (asnp, jsnp), (asn, jmy), (Uu, Vu))
 end
 
 function projectionB(VI::NonlinearVI{T}, u, proj_rc; show_trace=true) where T
@@ -82,16 +90,17 @@ function projectionB(VI::NonlinearVI{T}, u, proj_rc; show_trace=true) where T
     end
 end
 
-function Moreau_Yosida_it(VI::NonlinearVI; u₀=[], ρ=1e-5, NL=false, bt=true, tol=IN_TOL, max_iter=400, show_trace=true)
+function Moreau_Yosida_it(VI::NonlinearVI; u₀=[], uᵢ=[], ρ=1e-5, NL=false, bt=true, tol=IN_TOL, max_iter=400, show_trace=true)
 
     s(u) = σ(u,ρ)/ρ 
     ds(u) = dσ(u,ρ)/ρ
 
-    au, ju = VI.au
+    au, ju, juu = VI.au
     Uu, Vu = VI.fe_space_u
 
-    bu(uh, v) = NL ? au(uh, v, s, uh) : au(uh, v, s, u₀)
-    jbu(uh, duh, v) = NL ? ju(uh, duh, v, ds, uh) : ju(uh, duh, v, ds, interpolate_everywhere(x->0.0, Uu))
+    bu(uh, v) = NL ? au(uh, v, s, uh) : au(uh, v, s, uᵢ)
+    jbu(uh, duh, v) = NL ? juu(uh, duh, v, ds, uh) : ju(uh, duh, v, ds)
+
     opu = FEOperator(bu, jbu, Uu, Vu)
     if bt == false
         uB, its_u = newton(opu, u₀, max_iter=max_iter, damping=1, tol=tol, info=true, show_trace=show_trace);
@@ -110,24 +119,24 @@ function Path_Following_S(VI::NonlinearVI; u₀=[], ρ0=1, NL=false, max_its=20,
     its = 0
     for ρ in [ρ0*10.0^(-i) for i in 0:5]
         show_trace && print("\n Considering ρ = $ρ.\n")
-        (uh, it) = Moreau_Yosida_it(VI, u₀=uh, ρ=ρ, NL=NL, bt=bt, tol=tol, show_trace=show_trace)
+        (uh, it) = Moreau_Yosida_it(VI, u₀=uh, uᵢ=FEFunction(Uu,u₀.free_values[:]), ρ=ρ, NL=NL, bt=bt, tol=tol, show_trace=show_trace)
         its += it
-        if ρ < 1e-6
+        if ρ < 1e-10
             break
         end
     end
     return (uh, its)
 end
 
-function hik_S(VI::NonlinearVI; u₀=[], NL=false, show_trace=true)
-    au0, ju0 = VI.au0
+function hik_S(VI::NonlinearVI; u₀=[], uᵢ=[], NL=false, show_trace=true)
+    au0, ju0, ju0u = VI.au0
     Uu, Vu = VI.fe_space_u
-    bu(uh, v) = NL ? au0(uh, v, uh) : au0(uh, v, u₀)
-    ju(uh, duh, v) = NL ? ju0(uh, duh, v, uh) : ju0(uh, duh, v, interpolate_everywhere(x->0.0, Uu))
+    bu(uh, v) = NL ? au0(uh, v, uh) : au0(uh, v, uᵢ)
+    ju(uh, duh, v) = NL ? ju0u(uh, duh, v, uh) : ju0(uh, duh, v)
 
     opu = FEOperator(bu, ju, Uu, Vu)
     lb = -1e10*ones(Vu.nfree)
-    ub = VI.φ.free_values
+    ub = VI.Φ₀.free_values
     uB, its_u = hik(opu, u₀, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true, show_trace=show_trace);
     return (uB, its_u)
 end
@@ -145,7 +154,7 @@ function inner_solve(VI::NonlinearVI, u, proj_rc::Tuple{Number, Number}, tol::Nu
 
     if FS==true
         show_trace && print("\n   HIK feasibility step for u.\n")
-        (S, it) = hik_S(VI, u₀=S, NL=NL, show_trace=show_trace); hik_its+=it;
+        (S, it) = hik_S(VI, u₀=S, uᵢ=pu, NL=NL, show_trace=show_trace); hik_its+=it;
     end
 
     return pu, S, newton_its, pf_its, hik_its
@@ -236,13 +245,13 @@ function semismoothnewton(VI::NonlinearVI, uᵢ; max_its=10, tol=IN_TOL, globali
     while outer_its < max_its && h1c > tol
 
         R = uᵢ - uB
-
+        dΦu_ = interpolate_everywhere(x->VI.dΦ(uᵢ(Point(x...))), Uu)
+        # dΦu_ = VI.dΦ ∘ uᵢ
         u_norm = Xnorm(VI, uᵢ)
 
         if u_norm ≤ r
             print("‖u‖ ≤ r.  ")
             b((du, w), (v, q)) = asn((du, w), (v, q), R)
-            dΦu_ = interpolate_everywhere(x->VI.dΦ(uᵢ(Point(x...))), Uu)
             jb((du, w), (ddu, dw), (v, q)) = jsn((du, w), (ddu, dw), (v, q), dΦu_)
             append!(is_proj, false)
         else
@@ -256,7 +265,7 @@ function semismoothnewton(VI::NonlinearVI, uᵢ; max_its=10, tol=IN_TOL, globali
         m, Ũ, Ṽ, b̃, jb̃ = u_norm ≤ r ? (1, U, V, b, jb) : (2, Up, Vp, bp, jbp)
 
         # show_trace && print("Semismooth Newton step.\n")
-        Ah = interpolate_everywhere(VI.φ - uB, Vu)
+        Ah = interpolate_everywhere(VI.Φ₀ - uB, Vu)
         A = findall(Ah.free_values .≤ 0) .+ (m*Vu.nfree)
         inac = setdiff(1:((m+1)*Vu.nfree), A)
 
@@ -397,7 +406,7 @@ end
 #     return (zhs, h1s, its, is)
 # end
 
-function EOC(VI::NonlinearVI, us::AbstractVector{<:Gridap.FESpaces.SingleFieldFEFunction}, u::Gridap.FESpaces.SingleFieldFEFunction)
+function EOC(VI::NonlinearVI, us::AbstractVector, u::Gridap.FESpaces.SingleFieldFEFunction)
     errs = zeros(length(us))
     for i in 1:lastindex(us)
         errs[i] = Xnorm(VI, us[i]-u) 

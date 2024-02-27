@@ -33,7 +33,7 @@ function newton(op, uh; tol=1e-12, max_iter=1000, damping=1, us=[], M=[], info=f
         ucfs = vh.free_values
 
         τ = isempty(us) ? 1 : defl_τ(ucfs, du, us_cfs, M)
-        show_trace && print("tau = $τ\n")
+        # show_trace && print("tau = $τ\n")
         cfs = ucfs + damping*τ*du
 
         vh = FEFunction(uh.fe_space,cfs)
