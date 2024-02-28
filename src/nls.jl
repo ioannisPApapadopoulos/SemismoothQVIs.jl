@@ -261,6 +261,7 @@ function hik(op, uh, lb::AbstractArray{T}, ub; us::AbstractVector=[], M=[], tol:
     
     if iter == max_iter
         show_trace && print("HIK: Iteration max reached")
+        @warn("HIK: Iteration max reached.")
         # disp(normResidualOmega)
     end
     if info == true

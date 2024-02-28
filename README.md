@@ -44,7 +44,8 @@ The optional arguments in the solvers are:
 |Optional arguments|Type|Description|Notes|
 |:-:|:-:|:-:|:-:|
 |`max_its`|Integer|Maximum number of iterations of the outer solver before it is terminated.|Default is `20`.|
-|`tol`|Float|Absolute tolerance for inner and outer solvers|Default is `1e-10`.|
+|`tol`|Float|Absolute tolerance for inner and outer Newton solvers|Default is `1e-10`.|
+|`hik_tol`|Float|Absolute tolerance for inner HIK solver|Default is `1e-10`.|
 |`globalization`|Boolean (true/false)|Compute globalization iterate $x_B$ as well as the Newton iterate $x_N$|Default is `false`. Only for `semismoothnewton` and `moreau_yosida_newton`.|
 |`proj_rc`|(Float, Float)|(radius, center) for projection.|Default is `(Inf, 0.0)`. Not yet implemented for `moreau_yosida_newton`. Nonzero center not yet implemented for `semismoothnewton`.|
 |`bt`|Boolean (true/false)|Backtracking linesearch for Newton solver.|Default is `true`.|

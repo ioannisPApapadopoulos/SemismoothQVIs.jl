@@ -128,7 +128,7 @@ function Path_Following_S(VI::NonlinearVI; u₀=[], ρ0=1, NL=false, max_its=20,
     return (uh, its)
 end
 
-function hik_S(VI::NonlinearVI; u₀=[], uᵢ=[], NL=false, show_trace=true)
+function hik_S(VI::NonlinearVI; u₀=[], uᵢ=[], tol=IN_TOL, NL=false, show_trace=true)
     au0, ju0, ju0u = VI.au0
     Uu, Vu = VI.fe_space_u
     bu(uh, v) = NL ? au0(uh, v, uh) : au0(uh, v, uᵢ)
@@ -137,24 +137,24 @@ function hik_S(VI::NonlinearVI; u₀=[], uᵢ=[], NL=false, show_trace=true)
     opu = FEOperator(bu, ju, Uu, Vu)
     lb = -1e10*ones(Vu.nfree)
     ub = VI.Φ₀.free_values
-    uB, its_u = hik(opu, u₀, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true, show_trace=show_trace);
+    uB, its_u = hik(opu, u₀, lb, ub, max_iter=800, damping=1, tol=tol, info=true, show_trace=show_trace);
     return (uB, its_u)
 end
 
-function inner_solve(VI::NonlinearVI, u, proj_rc::Tuple{Number, Number}, tol::Number, bt::Bool, PF::Bool, FS::Bool, ρ0::Number, NL::Bool, newton_its::Int, pf_its::Int, hik_its::Int; show_trace=true)
+function inner_solve(VI::NonlinearVI, u, proj_rc::Tuple{Number, Number}, tol::Number, hik_tol::Number, bt::Bool, PF::Bool, FS::Bool, ρ0::Number, NL::Bool, newton_its::Int, pf_its::Int, hik_its::Int; show_trace=true)
     show_trace && print("\n   Project u.\n")
     pu = projectionB(VI, u, proj_rc, show_trace=show_trace)
 
     if PF==true
         show_trace && print("\n   Path-following MY for u.\n")
-        (S, it) = Path_Following_S(VI, u₀=pu, tol=IN_TOL, bt=bt, ρ0=ρ0, NL=NL, show_trace=show_trace); pf_its+=it;
+        (S, it) = Path_Following_S(VI, u₀=pu, tol=tol, bt=bt, ρ0=ρ0, NL=NL, show_trace=show_trace); pf_its+=it;
     else
         S = pu
     end
 
     if FS==true
         show_trace && print("\n   HIK feasibility step for u.\n")
-        (S, it) = hik_S(VI, u₀=S, uᵢ=pu, NL=NL, show_trace=show_trace); hik_its+=it;
+        (S, it) = hik_S(VI, u₀=S, uᵢ=pu, tol=hik_tol, NL=NL, show_trace=show_trace); hik_its+=it;
     end
 
     return pu, S, newton_its, pf_its, hik_its
@@ -163,7 +163,7 @@ end
 
 h1(VI::NonlinearVI, u, v) = sqrt(sum(∫((u-v) ⋅ (u-v) + ∇(u-v) ⋅ ∇(u-v))*VI.dΩ))
 
-function visolver(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, show_trace=true, show_inner_trace=true)
+function visolver(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, hik_tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, show_trace=true, show_inner_trace=true)
 
     Uu, Vu = VI.fe_space_u
     h1_1, zhs = [], []
@@ -171,7 +171,7 @@ function visolver(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, proj
     append!(zhs, [uᵢ])
     while outer_its < max_its
 
-        puᵢ, uB, newton_its, pf_its, hik_its = inner_solve(VI, uᵢ, proj_rc, tol, bt, PF, FS, ρ0, true, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
+        puᵢ, uB, newton_its, pf_its, hik_its = inner_solve(VI, uᵢ, proj_rc, tol, hik_tol, bt, PF, FS, ρ0, true, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
         # TODO: is this the correct error to record?
         append!(h1_1, h1(VI, uB, uᵢ)+h1(VI, puᵢ, uᵢ))
@@ -191,7 +191,7 @@ function visolver(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, proj
     return (zhs, h1_1, its)
 end
 
-function fixed_point(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, show_trace=true, show_inner_trace=true)
+function fixed_point(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, hik_tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, show_trace=true, show_inner_trace=true)
 
     Uu, Vu = VI.fe_space_u
     h1_1, zhs = [], []
@@ -199,7 +199,7 @@ function fixed_point(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, p
     append!(zhs, [uᵢ])
     while outer_its < max_its
 
-        puᵢ, uB, newton_its, pf_its, hik_its = inner_solve(VI, uᵢ, proj_rc, tol, bt, PF, FS, ρ0, false, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
+        puᵢ, uB, newton_its, pf_its, hik_its = inner_solve(VI, uᵢ, proj_rc, tol, hik_tol, bt, PF, FS, ρ0, false, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
         # TODO: is this the correct error to record?
         append!(h1_1, h1(VI, uB, uᵢ)+h1(VI, puᵢ, uᵢ))
@@ -220,7 +220,7 @@ function fixed_point(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, p
 end
 
 
-function semismoothnewton(VI::NonlinearVI, uᵢ; max_its=10, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true, FS=true, show_trace=true, show_inner_trace=true, X=[])
+function semismoothnewton(VI::NonlinearVI, uᵢ; max_its=10, tol=IN_TOL, hik_tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true, FS=true, show_trace=true, show_inner_trace=true, X=[])
 
     FS == false && @warn("Are you sure you want FS=false? This will prevent superlinear convergence.")
     Uu, Vu = VI.fe_space_u
@@ -236,7 +236,7 @@ function semismoothnewton(VI::NonlinearVI, uᵢ; max_its=10, tol=IN_TOL, globali
     h1c, outer_its, hik_its, pf_its, newton_its = 1,0,0,0,0
     is_proj, is_xBs = [], []
 
-    puᵢ, uB, newton_its, pf_its, hik_its = inner_solve(VI, uᵢ, proj_rc, tol, bt, PF, FS, 1, false, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
+    puᵢ, uB, newton_its, pf_its, hik_its = inner_solve(VI, uᵢ, proj_rc, tol, hik_tol, bt, PF, FS, 1, false, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
     h1c = h1(VI, uB, uᵢ)
     append!(h1s, h1c)
 
@@ -281,13 +281,13 @@ function semismoothnewton(VI::NonlinearVI, uᵢ; max_its=10, tol=IN_TOL, globali
         # τ = defl_τ(uᵢ.free_values[:], δuN.free_values[:], [zeros(Vu.nfree)], X)
 
         uN = FEFunction(Vu, uᵢ.free_values[:] + δuN.free_values[:])
-        puN, SN, newton_its, pf_its, hik_its = inner_solve(VI, uN, proj_rc, tol, bt, PF, FS, 1e-2, false, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
+        puN, SN, newton_its, pf_its, hik_its = inner_solve(VI, uN, proj_rc, tol, hik_tol, bt, PF, FS, 1e-2, false, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
         # TODO: is this the correct error to be tracking?
         h1N = h1(VI, uN, SN) + h1(VI, uN, puN)
 
         if globalization == true
-            puB, SB, newton_its, pf_its, hik_its = inner_solve(VI, uB, proj_rc, tol, bt, PF, FS, 1e-2, false, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
+            puB, SB, newton_its, pf_its, hik_its = inner_solve(VI, uB, proj_rc, tol, hik_tol, bt, PF, FS, 1e-2, false, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
             # TODO: is this the correct error to be tracking?
             h1B = h1(VI, uB, SB) + h1(VI, uB, puB)

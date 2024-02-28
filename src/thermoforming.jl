@@ -123,7 +123,7 @@ function Φ(Q::GeneralizedThermoformingQVI, uh; T₀=[], bt=true, tol=IN_TOL, sh
     jbT(Th, dTh, R) = jT(Th, dTh, R, uh)
     opT = FEOperator(bT, jbT, UT, VT)
     if bt == false
-        T, its_T = newton(opT, T₀, max_iter=400, damping=1, tol=IN_TOL, info=true, show_trace=show_trace)
+        T, its_T = newton(opT, T₀, max_iter=400, damping=1, tol=tol, info=true, show_trace=show_trace)
     else
         nls = NLSolver(show_trace=show_trace, method=:newton, linesearch=LineSearches.BackTracking(), ftol=tol, xtol=10*eps())
         solver = FESolver(nls)
@@ -170,27 +170,27 @@ function Path_Following_S(Q::GeneralizedThermoformingQVI, Tᵢ; u₀=[], ρ0=1, 
     return (uh, its)
 end
 
-function bm_S(Q::GeneralizedThermoformingQVI,Tᵢ; u₀=[],show_trace=true)
+function bm_S(Q::GeneralizedThermoformingQVI,Tᵢ; u₀=[], tol=IN_TOL, show_trace=true)
     au0, ju0 = Q.au0
     Uu, Vu = Q.fe_space_u
     opu = FEOperator(au0, ju0, Uu, Vu)
     lb = -1e10*ones(Vu.nfree)
     ub = interpolate_everywhere(Q.Φ₀ + Q.ϕ ⋅ Tᵢ, Uu).free_values
-    uB, its_u = bm(opu, u₀, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true, show_trace=show_trace);
+    uB, its_u = bm(opu, u₀, lb, ub, max_iter=800, damping=1, tol=tol, info=true, show_trace=show_trace);
     return (uB, its_u)
 end
 
-function hik_S(Q::GeneralizedThermoformingQVI,Tᵢ; u₀=[], show_trace=true)
+function hik_S(Q::GeneralizedThermoformingQVI,Tᵢ; u₀=[], tol=IN_TOL, show_trace=true)
     au0, ju0 = Q.au0
     Uu, Vu = Q.fe_space_u
     opu = FEOperator(au0, ju0, Uu, Vu)
     lb = -1e10*ones(Vu.nfree)
     ub = interpolate_everywhere(Q.Φ₀ + Q.ϕ ⋅ Tᵢ, Uu).free_values
-    uB, its_u = hik(opu, u₀, lb, ub, max_iter=800, damping=1, tol=IN_TOL, info=true, show_trace=show_trace);
+    uB, its_u = hik(opu, u₀, lb, ub, max_iter=800, damping=1, tol=tol, info=true, show_trace=show_trace);
     return (uB, its_u)
 end
 
-function inner_solve(Q::GeneralizedThermoformingQVI, u, T_, proj_rc::Tuple{Number, Number}, tol::Number, bt::Bool, PF::Bool, FS::Bool, ρ0::Number, newton_its::Int, pf_its::Int, hik_its::Int; show_trace=true)
+function inner_solve(Q::GeneralizedThermoformingQVI, u, T_, proj_rc::Tuple{Number, Number}, tol::Number, hik_tol::Number, bt::Bool, PF::Bool, FS::Bool, ρ0::Number, newton_its::Int, pf_its::Int, hik_its::Int; show_trace=true)
     show_trace && print("\n   Project u.\n")
     pu = projectionB(Q, u, proj_rc, show_trace=show_trace)
     show_trace && print("\n   Solve for T.\n")
@@ -198,14 +198,14 @@ function inner_solve(Q::GeneralizedThermoformingQVI, u, T_, proj_rc::Tuple{Numbe
 
     if PF==true
         show_trace && print("\n   Path-following MY for u.\n")
-        (S, it) = Path_Following_S(Q, T, u₀=pu, tol=IN_TOL, bt=bt, ρ0=ρ0, show_trace=show_trace); pf_its+=it;
+        (S, it) = Path_Following_S(Q, T, u₀=pu, tol=tol, bt=bt, ρ0=ρ0, show_trace=show_trace); pf_its+=it;
     else
         S = pu
     end
 
     if FS==true
         show_trace && print("\n   HIK feasibility step for u.\n")
-        (S, it) = hik_S(Q, T, u₀=S, show_trace=show_trace); hik_its+=it;
+        (S, it) = hik_S(Q, T, u₀=S, tol=hik_tol, show_trace=show_trace); hik_its+=it;
     end
 
     return pu, T, S, newton_its, pf_its, hik_its
@@ -214,7 +214,7 @@ end
 
 h1(Q::GeneralizedThermoformingQVI, u, v) = sqrt(sum(∫((u-v) ⋅ (u-v) + ∇(u-v) ⋅ ∇(u-v))*Q.dΩ))
 
-function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min_its=0, tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, show_trace=true, show_inner_trace=true)
+function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min_its=0, tol=IN_TOL, hik_tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, show_trace=true, show_inner_trace=true)
 
     Uu, Vu = Q.fe_space_u
     h1_1, zhs = [], []
@@ -222,7 +222,7 @@ function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min
     append!(zhs, [[uᵢ, Tᵢ]])
     while outer_its < max_its
 
-        puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, FS, ρ0, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
+        puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, hik_tol, bt, PF, FS, ρ0, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
         # TODO: is this the correct error to record?
         append!(h1_1, h1(Q, uB, uᵢ)+h1(Q, puᵢ, uᵢ))
@@ -242,7 +242,7 @@ function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min
     return (zhs, h1_1, its)
 end
 
-function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true, FS=true, show_trace=true, show_inner_trace=true, X=[])
+function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, tol=IN_TOL, hik_tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true, FS=true, show_trace=true, show_inner_trace=true, X=[])
 
     FS == false && @warn("Are you sure you want FS=false? This will prevent superlinear convergence.")
     Uu, Vu = Q.fe_space_u
@@ -259,7 +259,7 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20
     h1c, outer_its, hik_its, pf_its, newton_its = 1,0,0,0,0
     is_proj, is_xBs = [], []
 
-    puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, bt, PF, FS, 1, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
+    puᵢ, Tᵢ, uB, newton_its, pf_its, hik_its = inner_solve(Q, uᵢ, Tᵢ, proj_rc, tol, hik_tol, bt, PF, FS, 1, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
     h1c = h1(Q, uB, uᵢ)
     append!(h1s, h1c)
 
@@ -303,13 +303,13 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20
 
         uN = FEFunction(Vu, uᵢ.free_values[:] + δuN.free_values[:])
 
-        puN, TN, SN, newton_its, pf_its, hik_its = inner_solve(Q, uN, Tᵢ, proj_rc, tol, bt, PF, FS, 1e-2, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
+        puN, TN, SN, newton_its, pf_its, hik_its = inner_solve(Q, uN, Tᵢ, proj_rc, tol, hik_tol, bt, PF, FS, 1e-2, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
         # TODO: is this the correct error to be tracking?
         h1N = h1(Q, uN, SN) + h1(Q, uN, puN)
 
         if globalization == true
-            puB, TB, SB, newton_its, pf_its, hik_its = inner_solve(Q, uB, Tᵢ, proj_rc, tol, bt, PF, FS, 1e-2, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
+            puB, TB, SB, newton_its, pf_its, hik_its = inner_solve(Q, uB, Tᵢ, proj_rc, tol, hik_tol, bt, PF, FS, 1e-2, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
             # TODO: is this the correct error to be tracking?
             h1B = h1(Q, uB, SB) + h1(Q, uB, puB)
