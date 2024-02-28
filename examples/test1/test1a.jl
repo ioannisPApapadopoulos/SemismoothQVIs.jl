@@ -26,7 +26,7 @@ Q = GeneralizedThermoformingQVI(dΩ, k, Φ₀, ϕ, Ψ₀, ψ, g, dg, f, Uu, UT)
 T₀ = interpolate_everywhere(x->5.0, UT)
 J = Gridap.Algebra.jacobian(FEOperator(Q.au0..., Uu, Vu), interpolate_everywhere(x->0.0, Uu))
 
-errs1, errs2, eocs1, eocs2, isxB = [], [], [], [], []
+errs1, errs2, eocs1, eocs2, isxB, zhs1, zhs2 = [], [], [], [], [], [], []
 for (u₀, j) in zip([interpolate_everywhere(x->0.0, Uu), FEFunction(Vu, J \ f.free_values)], [18,13])
     # fixed point iteration
     (zhs1, h1_1, its_1) = fixed_point(Q, u₀, T₀; max_its=j, tol=1e-13,  ρ0=1, PF=true, show_inner_trace=false);
@@ -69,14 +69,14 @@ plot!()
 Plots.savefig("test1-atan-Fig1a.pdf")
 
 # Extract final solution
-uh = zhs1[its_1[1]][1]
-Th = zhs1[its_1[1]][2]
+uh = zhs1[end][1]
+Th = zhs1[end][2]
 mold = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
 # Check error
 (h1(Q, u₁, uh), h1(Q, T₁, Th))
 
-uh = zhs2[its_2[1]+1][1]
-Th = zhs2[its_2[1]+1][2]
+uh = zhs2[end][1]
+Th = zhs2[end][2]
 mold = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
 
 (h1(Q, u₁, uh), h1(Q, T₁, Th))
@@ -84,7 +84,7 @@ mold = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
 # Plot solution
 xx = range(0,1,50)
 p = plot(xx, [uh(Point.(xx)) mold(Point.(xx))],#  mold(Point.(xx)) Th(Point.(xx))],
-    label=["Membrane" "Mold"],
+    label=["Membrane  "*L"\bar u" "Mold  "*L"\Phi_0 + \varphi \bar T"],
     linestyle=[:solid :dash],
     xlabel=L"x",
     linewidth=3,
