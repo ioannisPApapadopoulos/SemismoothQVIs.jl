@@ -6,7 +6,7 @@ using Gridap, LineSearches, LinearAlgebra
 
 export GeneralizedThermoformingQVI, NonlinearVI,
     fixed_point, semismoothnewton, moreau_yosida_newton, visolver,
-    h1, EOC,
+    h1, h10, EOC,
     fem_model,
     latex_table
 

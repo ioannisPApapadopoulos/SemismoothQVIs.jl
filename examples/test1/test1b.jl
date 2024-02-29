@@ -49,7 +49,7 @@ for i in 1:2
         linewidth=2,
         linestyle=ls[i],
         marker=:square,
-        title=L"\alpha_1 = 1+\pi^{-1}, \alpha_2 = 101/100",
+        title=L"\alpha_1 = 10^{-2}, \alpha_2 = 10^{-2}",
         label="Semismooth Newton  "*u0string[i],
         xlabel="Iterations" * L" $i$",
         ylabel=L"\Vert u_{i, h} - \bar u \, \Vert_{H^1_0(0,1)}",
@@ -76,7 +76,7 @@ for i in 1:2
         linewidth=2,
         linestyle=ls[i],
         marker=:square,
-        title=L"\alpha_1 = 1+\pi^{-1}, \alpha_2 = 101/100",
+        title=L"\alpha_1 = 10^{-2}, \alpha_2 = 10^{-2}",
         label="Semismooth Newton  "*u0string[i],
         xlabel="Iterations" * L" $i$",
         ylabel=L"\Vert u_{i, h} - \bar u \, \Vert_{H^1_0(0,1)}",
@@ -101,24 +101,24 @@ Plots.savefig("test1-atan-Fig1c.pdf")
 # Extract final solution
 uh = zhs1[end][1]
 Th = zhs1[end][2]
-mold = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
+mould = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
 # Check error
 (h1(Q, u₁, uh), h1(Q, T₁, Th))
 
 uh = zhs2[end][1]
 Th = zhs2[end][2]
-mold = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
+mould = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
 (h1(Q, u₁, uh), h1(Q, T₁, Th))
 
 uh = zhs3[end][1]
 Th = zhs3[end][2]
-mold = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
+mould = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
 (h1(Q, u₁, uh), h1(Q, T₁, Th))
 
 # Plot solution
 xx = range(0,1,50)
-p = plot(xx, [uh(Point.(xx)) mold(Point.(xx))],#  mold(Point.(xx)) Th(Point.(xx))],
-    label=["Membrane  "*L"\bar u" "Mold  "*L"\Phi_0 + \varphi \bar T"],
+p = plot(xx, [uh(Point.(xx)) mould(Point.(xx))],#  mould(Point.(xx)) Th(Point.(xx))],
+    label=["Membrane  "*L"\bar u" "Mould  "*L"\Phi_0 + \varphi \bar T"],
     linestyle=[:solid :dash],
     xlabel=L"x",
     linewidth=3,

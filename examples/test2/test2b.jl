@@ -13,13 +13,14 @@ k = π^2
 ϕ = interpolate_everywhere(x->α₂*10*π^2*sin(π*x[1])/(5-cos(2π*x[1])), UT)
 ψ = interpolate_everywhere(x->5*π^2*sin(π*x[1])/(5-cos(2π*x[1])), UT)
 f = interpolate_everywhere(x->α₁*π^2*sin(π*x[1]), Uu)
+g(s) = s ≥ 0.0 ? 0.0 : 4 / α₁ * s^2
+dg(s)= s ≥ 0.0 ? 0.0 : 8 / α₁ * s
+
 
 # Radius of (u,T) = (0,0) solution
 Rα = 3α₁*  ( sqrt( ((5α₂ + 8)*π^2 + 8π) / (80α₂) )  - π/4   ) /  (10*(1+π)) 
 50α₂/3/α₁ *(Rα + 20*(1+π)/3/π/α₁ * Rα^2) ≈ 1
 
-g(s) = s ≥ 0.0 ? 0.0 : 4 / α₁ * s^2
-dg(s)= s ≥ 0.0 ? 0.0 : 8 / α₁ * s
 
 # Explicit solutions
 (u₁, T₁) = (interpolate_everywhere(x->0.0, Vu), interpolate_everywhere(x->0.0, VT))
@@ -32,27 +33,40 @@ Q = GeneralizedThermoformingQVI(dΩ, k, Φ₀, ϕ, Ψ₀, ψ, g, dg, f, Uu, UT)
 T₀ = interpolate_everywhere(x->5.0, UT)
 u₀ = interpolate_everywhere(x->1e2*(1.0 -x[1])*x[1], Uu)
 
+u₂_norm = h10(Q, u₂)
 
 # Solve via fixed point & semismooth Newton, both converge to maximal solution
 (zhs1_max, h1_1, its_1_max) = fixed_point(Q, u₀, T₀; max_its=50, tol=1e-13, PF=true, bt=true, proj_rc=(Inf, 0.0), show_inner_trace=false);
 (zhs2_max, h1_2, its_2_max, is_2) = semismoothnewton(Q, u₀, T₀; max_its=100, tol=1e-13, PF=true, globalization=true, proj_rc=(Inf,0.0), show_inner_trace=false);
 
-errs1, errs2, eocs1, eocs2, isxB, zhs1_min, zhs2_min = [], [], [], [], [], [], []
-for R in [20.0] #0.1:0.1:0.6
+errs1, errs2, errs3, eocs1, eocs2, eocs3, isxB, zhs1_min, zhs2_min, zhs3_min = [], [], [], [], [], [], [], [], [], []
+Rs = range(0.01, 12.3, 10)
+for R in Rs
 # R = 0.1
     # Solve via fixed point & semismooth Newton + projection, both converge to minimal solution
+    print("Considering R=$R.\n")
     (zhs1_min, h1_1, its_1_min) = fixed_point(Q, u₀, T₀; max_its=20, tol=1e-15, PF=true, bt=true, proj_rc=(R, 0.0), show_inner_trace=false);
-    (zhs2_min, h1_2, its_2_min, is_2) = semismoothnewton(Q, u₀, T₀; max_its=20, tol=1e-15, PF=true, globalization=false, proj_rc=(R,0.0), show_inner_trace=false);
+    (zhs2_min, h1_2, its_2_min, is_2) = semismoothnewton(Q, u₀, T₀; max_its=20, tol=1e-15, PF=true, globalization=true, proj_rc=(R,0.0), show_inner_trace=false);
+    (zhs3_min, h1_3, its_3_min, is_3) = semismoothnewton(Q, u₀, T₀; max_its=20, tol=1e-15, PF=true, globalization=false, proj_rc=(R,0.0), show_inner_trace=false);
 
     err1, eoc1 = EOC(Q, first.(zhs1_min), u₁)
     err2, eoc2 = EOC(Q, first.(zhs2_min), u₁)
+    err3, eoc3 = EOC(Q, first.(zhs3_min), u₁)
     append!(errs1, [err1]); 
-    append!(errs2, [err2]);  
+    append!(errs2, [err2]);
+    append!(errs3, [err3]);
     append!(eocs1, [eoc1]); 
-    append!(eocs2, [eoc2]);  
-    append!(isxB, [is_2[2]])
+    append!(eocs2, [eoc2]);
+    append!(eocs3, [eoc3]);
+    append!(isxB, [is_3[2]])
 end
 
+its = [round.(Rs, digits=3) (length.(errs1).-1) (length.(errs2).-2) (length.(errs3).-2)]
+brackets = round.([maximum.(eocs1) maximum.(eocs2) maximum.(eocs3)], digits=2)
+tab = latex_table(its,cap=20, brackets=brackets)
+open("test2_table.log", "w") do file
+    write(file, tab)
+end
 # ls = [:solid, :dash, :dashdot, :dashdotdot]
 Rs = 0.1:0.1:0.6
 u0string = [L"$r=%$R$" for R in Rs]
@@ -87,12 +101,12 @@ uh, Th = zhs1_min[end]; (h1(Q, u₁, uh), h1(Q, T₁, Th))
 uh, Th = zhs2_max[end]; (h1(Q, u₂, uh), h1(Q, T₂, Th))
 uh, Th = zhs2_min[end]; (h1(Q, u₁, uh), h1(Q, T₁, Th))
 
-mold = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
+mould = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
 
 # Plot solution
 xx = range(0,1,50)
-p = plot(xx, [uh(Point.(xx)) mold(Point.(xx))],#  mold(Point.(xx)) Th(Point.(xx))],
-    label=["Membrane" "Mold"],
+p = plot(xx, [uh(Point.(xx)) mould(Point.(xx))],#  mould(Point.(xx)) Th(Point.(xx))],
+    label=["Membrane" "Mould"],
     linestyle=[:solid :dash],
     xlabel=L"x",
     linewidth=2, xlabelfontsize=20)

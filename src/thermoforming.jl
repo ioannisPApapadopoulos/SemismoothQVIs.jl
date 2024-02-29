@@ -211,8 +211,10 @@ function inner_solve(Q::GeneralizedThermoformingQVI, u, T_, proj_rc::Tuple{Numbe
     return pu, T, S, newton_its, pf_its, hik_its
 end
 
-
+h1(Q::GeneralizedThermoformingQVI, u) = sqrt(sum(∫((u) ⋅ (u) + ∇(u) ⋅ ∇(u))*Q.dΩ))
+h10(Q::GeneralizedThermoformingQVI, u) = sqrt(sum(∫( ∇(u) ⋅ ∇(u))*Q.dΩ))
 h1(Q::GeneralizedThermoformingQVI, u, v) = sqrt(sum(∫((u-v) ⋅ (u-v) + ∇(u-v) ⋅ ∇(u-v))*Q.dΩ))
+h10(Q::GeneralizedThermoformingQVI, u, v) = sqrt(sum(∫( ∇(u-v) ⋅ ∇(u-v))*Q.dΩ))
 
 function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min_its=0, tol=IN_TOL, hik_tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, show_trace=true, show_inner_trace=true)
 

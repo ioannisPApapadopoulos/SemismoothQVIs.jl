@@ -71,20 +71,20 @@ Plots.savefig("test1-atan-Fig1a.pdf")
 # Extract final solution
 uh = zhs1[end][1]
 Th = zhs1[end][2]
-mold = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
+mould = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
 # Check error
 (h1(Q, u₁, uh), h1(Q, T₁, Th))
 
 uh = zhs2[end][1]
 Th = zhs2[end][2]
-mold = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
+mould = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
 
 (h1(Q, u₁, uh), h1(Q, T₁, Th))
 
 # Plot solution
 xx = range(0,1,50)
-p = plot(xx, [uh(Point.(xx)) mold(Point.(xx))],#  mold(Point.(xx)) Th(Point.(xx))],
-    label=["Membrane  "*L"\bar u" "Mold  "*L"\Phi_0 + \varphi \bar T"],
+p = plot(xx, [uh(Point.(xx)) mould(Point.(xx))],#  mould(Point.(xx)) Th(Point.(xx))],
+    label=["Membrane  "*L"\bar u" "Mould  "*L"\Phi_0 + \varphi \bar T"],
     linestyle=[:solid :dash],
     xlabel=L"x",
     linewidth=3,
