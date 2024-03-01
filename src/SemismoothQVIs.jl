@@ -8,7 +8,7 @@ export GeneralizedThermoformingQVI, NonlinearVI,
     fixed_point, semismoothnewton, moreau_yosida_newton, visolver,
     h1, h10, EOC,
     fem_model,
-    latex_table
+    latex_table, test2_latex_table
 
 include("fem.jl")
 include("nls.jl")

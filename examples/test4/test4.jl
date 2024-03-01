@@ -1,17 +1,17 @@
 using Gridap, SemismoothQVIs
 using Plots, LaTeXStrings
 
-n = 200 # dofs, h = 1/n
+n = 2000 # dofs, h = 1/n
 dΩ, U, V, _, _ = fem_model(n) # Piecewise linear FEM discretization on (0,1)
 
 # Nonlinear VI parameter choices
 α = 1.0
-f = interpolate_everywhere(x->20.0, U)
-# b₁(s) = s < 0 ? 0.0 : s
-# db₁(s) = s < 0 ? 0.0 : 1.0
+f = interpolate_everywhere(x->50.0*sin(2π*x[1]), U)
+b₁(s) = s < 0 ? 0.0 : α*s
+db₁(s) = s < 0 ? 0.0 : α
 
-b₁(s) = α*s
-db₁(s) = α
+# b₁(s) = α*s
+# db₁(s) = α
 
 b₂(s) = s + cos(s)
 db₂(s) = 1.0 - sin(s)
@@ -19,22 +19,22 @@ db₂(s) = 1.0 - sin(s)
 Φ(u) =  b₁(u) * b₂(u) #  u < 0 ? 0.0 : α*u*cos(u)
 dΦ(u) = b₁(u)*db₂(u) + db₁(u)*b₂(u)  # u < 0 ? 0.0 : α*cos(u) - α*u*sin(u)
 
-Φ₀ = interpolate_everywhere(x->2.5, U)
+Φ₀ = interpolate_everywhere(x->1.0, U)
 
 
 # Nonlinear VI struct
 VI = NonlinearVI(dΩ, Φ, dΦ, Φ₀, f, U)
 
 # Initial guess
-
-u₀ = interpolate_everywhere(x->sin(2π*x[1]), U)
-(zhs1, h1_1, its_1) = fixed_point(VI, u₀; max_its=20, tol=1e-13,  ρ0=1, PF=true, bt=false, show_inner_trace=false);
-(zhs2, h1_2, its_2) = visolver(VI, u₀; max_its=20, tol=1e-11,  ρ0=1, PF=false, show_inner_trace=false);
-(zhs3, h1_3, its_3, is_3) = semismoothnewton(VI, u₀; max_its=30, tol=1e-13, PF=false, globalization=false, show_inner_trace=false);
+u₀ = interpolate_everywhere(x->x[1]*(1-x[1]), U)
+@time (zhs1, h1_1, its_1) = fixed_point(VI, u₀; max_its=40, tol=1e-12,  ρ0=1, PF=true, show_inner_trace=false, show_trace=true);
+err3, eoc3 = EOC(VI, zhs1, zhs3[end])
+@time (zhs2, h1_2, its_2) = visolver(VI, u₀; max_its=2, tol=1e-12,  ρ0=1, PF=true, show_inner_trace=false, show_trace=true);
+@time (zhs3, h1_3, its_3, is_3) = semismoothnewton(VI, u₀; max_its=30, tol=1e-12, PF=true, globalization=false, show_inner_trace=false, show_trace=true);
 
 err3, eoc3 = EOC(VI, zhs3, zhs2[end])
 # Extract final solution
-uh = zhs3[3]
+uh = zhs1[end]
 xx = range(0,1,50)
 p = plot(xx, [uh(Point.(xx))],#  mold(Point.(xx)) Th(Point.(xx))],
     label=L"u",
@@ -44,6 +44,7 @@ p = plot(xx, [uh(Point.(xx))],#  mold(Point.(xx)) Th(Point.(xx))],
     legend=:bottom,
     xlabelfontsize=20,legendfontsize=12,xtickfontsize=10,ytickfontsize=10,)
 
+asds
 
 # errs1, errs3, eocs1, eocs3 = [], [], [], []
 # for (u₀, j) in zip([interpolate_everywhere(x->0.0, Uu), FEFunction(Vu, J \ f.free_values)], [18,13])

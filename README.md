@@ -51,6 +51,7 @@ The optional arguments in the solvers are:
 |`bt`|Boolean (true/false)|Backtracking linesearch for Newton solver.|Default is `true`.|
 |`PF`|Boolean (true/false)|Use a path-following Moreau-Yosida regularization to solve the inner obstacle problem.|Default is `true`. Only for `fixed_point` and `semismoothnewton`.|
 |`ρ0`|Float|Initial parameter for the path-following Moreau-Yosida regularization.|Default is `1`. Only for `fixed_point`.|
+|`ρ_min`|Float|Terminate path-following Moreau-Yosida regularization if ρ<ρ_min.|Default is `1e-6`. Only for `fixed_point` and `semismoothnewton`.|
 |`FS`|Boolean (true/false)|Use the primal-dual active set strategy (possibly after a path-following).|Default is `true`. Only for `fixed_point` and `semismoothnewton`.|
 |`ρ`|Float|Fixed Moreau-Yosida parameter for `moreau_yosida_newton`.|Default is `1e-5`. Only for `moreau_yosida_newton`.|
 |`inner_max_its`|Integer|Max number of iterations for obstacle problem subsolver in `moreau_yosida_newton`.|Default is `400`. Only for `moreau_yosida_newton`.|

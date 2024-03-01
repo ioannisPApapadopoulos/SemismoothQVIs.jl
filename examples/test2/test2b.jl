@@ -37,10 +37,10 @@ u₂_norm = h10(Q, u₂)
 
 # Solve via fixed point & semismooth Newton, both converge to maximal solution
 (zhs1_max, h1_1, its_1_max) = fixed_point(Q, u₀, T₀; max_its=50, tol=1e-13, PF=true, bt=true, proj_rc=(Inf, 0.0), show_inner_trace=false);
-(zhs2_max, h1_2, its_2_max, is_2) = semismoothnewton(Q, u₀, T₀; max_its=100, tol=1e-13, PF=true, globalization=true, proj_rc=(Inf,0.0), show_inner_trace=false);
+(zhs2_max, h1_2, its_2_max, is_2) = semismoothnewton(Q, u₀, T₀; max_its=100, tol=1e-13, PF=true, globalization=false, proj_rc=(Inf,0.0), show_inner_trace=false);
 
 errs1, errs2, errs3, eocs1, eocs2, eocs3, isxB, zhs1_min, zhs2_min, zhs3_min = [], [], [], [], [], [], [], [], [], []
-Rs = range(0.01, 12.3, 10)
+Rs = range(0.01, h10(Q, u₂), 10)
 for R in Rs
 # R = 0.1
     # Solve via fixed point & semismooth Newton + projection, both converge to minimal solution
@@ -61,9 +61,10 @@ for R in Rs
     append!(isxB, [is_3[2]])
 end
 
-its = [round.(Rs, digits=3) (length.(errs1).-1) (length.(errs2).-2) (length.(errs3).-2)]
-brackets = round.([maximum.(eocs1) maximum.(eocs2) maximum.(eocs3)], digits=2)
-tab = latex_table(its,cap=20, brackets=brackets)
+its = [round.(Rs, digits=3) (length.(errs1).-1) (length.(errs2).-2) (length.(errs3).-2)]'
+eoc = round.([maximum.(eocs1) maximum.(eocs2) maximum.(eocs3)], digits=2)'
+converge = [last.(errs1) .< 1e-12 last.(errs2) .< 1e-12  last.(errs3) .< 1e-12 ]'
+tab = test2_latex_table(its,eoc,converge)
 open("test2_table.log", "w") do file
     write(file, tab)
 end

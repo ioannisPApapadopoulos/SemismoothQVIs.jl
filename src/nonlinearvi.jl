@@ -250,7 +250,7 @@ function semismoothnewton(VI::NonlinearVI, uᵢ; max_its=10, tol=IN_TOL, hik_tol
         u_norm = Xnorm(VI, uᵢ)
 
         if u_norm ≤ r
-            print("‖u‖ ≤ r.  ")
+            show_trace && print("‖u‖ ≤ r.  ")
             b((du, w), (v, q)) = asn((du, w), (v, q), R)
             jb((du, w), (ddu, dw), (v, q)) = jsn((du, w), (ddu, dw), (v, q), dΦu_)
             append!(is_proj, false)

@@ -22,3 +22,31 @@ function latex_table(its::Matrix; cap=Inf, brackets=[])
     end
     return text
 end
+
+function test2_latex_table(its, eoc, converge)
+    nr, nc = size(its)
+    text = ""
+
+    text = text * "{" * repeat("c |", nc) *"c} \n\n"
+    text = text * "R"
+    for j in 1:nc
+        val = its[1,j]
+        text = text * "& $val"
+    end
+    text = text * "\\\\ \n"
+
+    for i = 2:nr
+        for j = 1:nc
+            text * ""
+            if !converge[i-1,j]
+                text = text * "& \\begin{tabular}{@{}c@{}} -  \\end{tabular}   \n"
+            else
+                text = text * "& \\begin{tabular}{@{}c@{}} $(Int(its[i,j])) \\\\ ($(eoc[i-1,j]))  \\end{tabular}   \n"
+            end
+            if j == nc
+                text = text *"\n\n"
+            end
+        end
+    end
+    return text
+end
