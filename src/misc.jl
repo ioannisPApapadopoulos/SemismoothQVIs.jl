@@ -50,3 +50,23 @@ function test2_latex_table(its, eoc, converge)
     end
     return text
 end
+
+function test4_latex_table(its::Matrix, its2::Matrix)
+    nr, nc = size(its)
+    text = ""
+    for i = 1:nr
+        text = text * "$(its[i,1])  &"
+        for j = 2:nc
+            val = Int(its[i,j])
+            val2 = Int(its2[i,j])
+            text = text * "$val ($val2)"
+            # val = its[i,j]
+            if j == nc 
+                text = text * "\\\\\n"
+            else
+                text = text * " &"
+            end
+        end
+    end
+    return text
+end
