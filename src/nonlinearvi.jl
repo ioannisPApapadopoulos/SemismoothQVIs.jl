@@ -5,7 +5,7 @@ Given an obstacle Φ₀, find u ∈ H¹₀(Ω) that satisfies
     u ≤ Φ₀, ⟨-Δu - f - Φ(u), v - u⟩≥0 ∀ v∈H¹₀(Ω), v≤ Φ₀.
 
 """
-# IN_TOL = 1e-10
+# 1e-10 = 1e-10
 struct NonlinearVI{T}
     dΩ::Gridap.CellData.GenericMeasure
     Φ::Function
@@ -90,7 +90,7 @@ function projectionB(VI::NonlinearVI{T}, u, proj_rc; show_trace=true) where T
     end
 end
 
-function Moreau_Yosida_it(VI::NonlinearVI; u₀=[], uᵢ=[], ρ=1e-5, NL=false, bt=true, tol=IN_TOL, max_iter=400, show_trace=true)
+function Moreau_Yosida_it(VI::NonlinearVI; u₀=[], uᵢ=[], ρ=1e-5, NL=false, bt=true, tol=1e-10, max_iter=400, show_trace=true)
 
     s(u) = σ(u,ρ)/ρ 
     ds(u) = dσ(u,ρ)/ρ
@@ -113,7 +113,7 @@ function Moreau_Yosida_it(VI::NonlinearVI; u₀=[], uᵢ=[], ρ=1e-5, NL=false, 
     return (uB, its_u)
 end
 
-function Path_Following_S(VI::NonlinearVI; u₀=[], ρ0=1, ρ_min=1e-6, NL=false, max_its=20, tol=IN_TOL, bt=true, show_trace=true)
+function Path_Following_S(VI::NonlinearVI; u₀=[], ρ0=1, ρ_min=1e-6, NL=false, max_its=20, tol=1e-10, bt=true, show_trace=true)
     Uu = first(VI.fe_space_u)
     uh = FEFunction(Uu, u₀.free_values[:])
     its = 0
@@ -128,7 +128,7 @@ function Path_Following_S(VI::NonlinearVI; u₀=[], ρ0=1, ρ_min=1e-6, NL=false
     return (uh, its)
 end
 
-function hik_S(VI::NonlinearVI; u₀=[], uᵢ=[], tol=IN_TOL, NL=false, show_trace=true)
+function hik_S(VI::NonlinearVI; u₀=[], uᵢ=[], tol=1e-10, NL=false, show_trace=true)
     au0, ju0, ju0u = VI.au0
     Uu, Vu = VI.fe_space_u
     bu(uh, v) = NL ? au0(uh, v, uh) : au0(uh, v, uᵢ)
@@ -163,7 +163,7 @@ end
 
 h1(VI::NonlinearVI, u, v) = sqrt(sum(∫((u-v) ⋅ (u-v) + ∇(u-v) ⋅ ∇(u-v))*VI.dΩ))
 
-function visolver(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, hik_tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, ρ_min=1e-6, show_trace=true, show_inner_trace=true)
+function visolver(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=1e-10, hik_tol=1e-10, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, ρ_min=1e-6, show_trace=true, show_inner_trace=true)
 
     Uu, Vu = VI.fe_space_u
     h1_1, zhs = [], []
@@ -191,7 +191,7 @@ function visolver(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, hik_
     return (zhs, h1_1, its)
 end
 
-function fixed_point(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, hik_tol=IN_TOL, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, ρ_min=1e-6, show_trace=true, show_inner_trace=true)
+function fixed_point(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=1e-10, hik_tol=1e-10, proj_rc=(Inf, 0), bt=true, PF=true, FS=true, ρ0=1, ρ_min=1e-6, show_trace=true, show_inner_trace=true)
 
     Uu, Vu = VI.fe_space_u
     h1_1, zhs = [], []
@@ -220,7 +220,7 @@ function fixed_point(VI::NonlinearVI, uᵢ; max_its=20, min_its=0, tol=IN_TOL, h
 end
 
 
-function semismoothnewton(VI::NonlinearVI, uᵢ; max_its=10, tol=IN_TOL, hik_tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), ρ_min=1e-6, bt=true, PF=true, FS=true, show_trace=true, show_inner_trace=true, X=[])
+function semismoothnewton(VI::NonlinearVI, uᵢ; max_its=10, tol=1e-10, hik_tol=1e-10, globalization=false, proj_rc=(Inf, 0.0), ρ_min=1e-6, bt=true, PF=true, FS=true, show_trace=true, show_inner_trace=true, X=[])
 
     FS == false && @warn("Are you sure you want FS=false? This will prevent superlinear convergence.")
     Uu, Vu = VI.fe_space_u
@@ -313,7 +313,7 @@ function semismoothnewton(VI::NonlinearVI, uᵢ; max_its=10, tol=IN_TOL, hik_tol
     return (zhs, h1s, its, is)
 end
 
-# function moreau_yosida_newton(VI::NonlinearVI, uᵢ, Tᵢ; ρ=1e-5, max_its=10, inner_max_its=400, tol=IN_TOL, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true)
+# function moreau_yosida_newton(VI::NonlinearVI, uᵢ, Tᵢ; ρ=1e-5, max_its=10, inner_max_its=400, tol=1e-10, globalization=false, proj_rc=(Inf, 0.0), bt=true, PF=true)
     
 #     Uu, Vu = VI.fe_space_u
 #     UT, VT = VI.fe_space_T
