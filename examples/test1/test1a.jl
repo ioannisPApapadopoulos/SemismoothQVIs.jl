@@ -2,6 +2,15 @@ using Gridap, SemismoothQVIs
 using Plots
 using LaTeXStrings
 
+"""
+Section 7.2 Test 1: a one-dimensional QVI with a known solution
+
+Find u ∈ H¹₀(Ω) that satisfies
+    u ≤ Φ₀ + Φ(u), ⟨-Δu - f, v - u⟩≥0 ∀ v∈H¹₀(Ω), v≤ Φ₀ + Φ(u)
+with Φ(u) given by Φ(u) := ϕT and T as the solution of
+    kT - ΔT = g(Ψ₀ + ψT - u), ∂ν T = 0 on ∂Ω.
+"""
+
 n = 2000 # dofs, h = 1/n
 dΩ, Uu, Vu, UT, VT = fem_model(n) # Piecewise linear FEM discretization on (0,1)
 
@@ -29,9 +38,9 @@ J = Gridap.Algebra.jacobian(FEOperator(Q.au0..., Uu, Vu), interpolate_everywhere
 errs1, errs2, eocs1, eocs2, isxB, zhs1, zhs2 = [], [], [], [], [], [], []
 for (u₀, j) in zip([interpolate_everywhere(x->0.0, Uu), FEFunction(Vu, J \ f.free_values)], [18,13])
     # fixed point iteration
-    (zhs1, h1_1, its_1) = fixed_point(Q, u₀, T₀; max_its=j, tol=1e-13,  ρ0=1, PF=true, show_inner_trace=false);
+    (zhs1, h1_1, its_1) = fixed_point(Q, u₀, T₀; max_its=j, out_tol=1e-13, in_tol=1e-13, ρ0=1, PF=true, show_inner_trace=false);
     # Semismooth Newton method
-    (zhs2, h1_2, its_2, is_2) = semismoothnewton(Q, u₀, T₀; max_its=30, tol=1e-12, PF=true, globalization=true, show_inner_trace=false);
+    (zhs2, h1_2, its_2, is_2) = semismoothnewton(Q, u₀, T₀; max_its=30, out_tol=1e=12, in_tol=1e-12, PF=true, globalization=true, show_inner_trace=false);
     err1, eoc1 = EOC(Q, first.(zhs1), u₁)
     err2, eoc2 = EOC(Q, first.(zhs2), u₁)
     append!(errs1, [err1]); append!(errs2, [err2]); append!(eocs1, [eoc1]); append!(eocs2, [eoc2]); append!(isxB, [is_2[2]])

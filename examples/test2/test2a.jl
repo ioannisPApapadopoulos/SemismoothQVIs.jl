@@ -1,6 +1,15 @@
 using Gridap, SemismoothQVIs
 using Plots, LaTeXStrings
 
+"""
+Section 7.3 Test 2: a one-dimensional QVI with two known solutions
+
+Find u ∈ H¹₀(Ω) that satisfies
+    u ≤ Φ₀ + Φ(u), ⟨-Δu - f, v - u⟩≥0 ∀ v∈H¹₀(Ω), v≤ Φ₀ + Φ(u)
+with Φ(u) given by Φ(u) := ϕT and T as the solution of
+    kT - ΔT = g(Ψ₀ + ψT - u), ∂ν T = 0 on ∂Ω.
+"""
+
 n = 2000 # dofs, h = 1/n
 dΩ, Uu, Vu, UT, VT = fem_model(n) # Piecewise linear FEM discretization on (0,1)
 
@@ -23,14 +32,14 @@ dg(s)= s ≥ 0.0 ? 0.0 : 8 / α₁ * s
 Q = GeneralizedThermoformingQVI(dΩ, k, Φ₀, ϕ, Ψ₀, ψ, g, dg, f, Uu, UT)
 
 
-(zhs1, h1_1, its_1) = fixed_point(Q, u₀, T₀; max_its=200, tol=1e-13, PF=true, bt=true, proj_rc=(Inf, 0.0), show_inner_trace=false);
+(zhs1, h1_1, its_1) = fixed_point(Q, u₀, T₀; max_its=200, out_tol=1e-13, in_tol=1e-13, PF=true, bt=true, proj_rc=(Inf, 0.0), show_inner_trace=false);
 uh, Th = zhs1[end]; (h1(Q, u₁, uh), h1(Q, T₁, Th))
 err1a, _ = EOC(Q, first.(zhs1), u₁)
 err1b, _ = EOC(Q, first.(zhs1), u₀)
-(zhs2, h1_2, its_2, is_2) = semismoothnewton(Q, u₀, T₀; max_its=80, tol=1e-13, PF=true, globalization=true, proj_rc=(Inf,0.0), show_inner_trace=false);
+(zhs2, h1_2, its_2, is_2) = semismoothnewton(Q, u₀, T₀; max_its=80, out_tol=1e-13, in_tol=1e-13, PF=true, globalization=true, proj_rc=(Inf,0.0), show_inner_trace=false);
 err2a, _ = EOC(Q, first.(zhs2), u₁)
 err2b, _ = EOC(Q, first.(zhs2), u₀)
-(zhs3, h1_3, its_3, is_3) = semismoothnewton(Q, u₀, T₀; max_its=80, tol=1e-13, PF=true, globalization=false, proj_rc=(Inf,0.0), show_inner_trace=false);
+(zhs3, h1_3, its_3, is_3) = semismoothnewton(Q, u₀, T₀; max_its=80, out_tol=1e=13, in_tol=1e-13, PF=true, globalization=false, proj_rc=(Inf,0.0), show_inner_trace=false);
 err3a, _ = EOC(Q, first.(zhs3), u₁)
 err3b, _ = EOC(Q, first.(zhs3), u₀)
 

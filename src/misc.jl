@@ -51,7 +51,7 @@ function test2_latex_table(its, eoc, converge)
     return text
 end
 
-function test4_latex_table(its::Matrix, its2::Matrix)
+function latex_table(its::Matrix, its2::Matrix)
     nr, nc = size(its)
     text = ""
     for i = 1:nr
