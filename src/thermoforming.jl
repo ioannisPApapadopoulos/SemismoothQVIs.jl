@@ -302,7 +302,11 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20
 
         # τ = defl_τ(uᵢ.free_values[:], δuN.free_values[:], [zeros(Vu.nfree)], X)
 
-        uN = FEFunction(Vu, uᵢ.free_values[:] + δuN.free_values[:])
+        ls = BackTracking()
+        ls_α = bt_linesearch(Q, ls, uᵢ, δuN, Tᵢ, proj_rc, in_tol, hik_tol, bt, PF, FS, ρ_min, newton_its, pf_its, hik_its)
+
+        print("Linesearch stepsize: $ls_α \n")
+        uN = FEFunction(Vu, uᵢ.free_values[:] + ls_α*δuN.free_values[:])
 
         puN, TN, SN, newton_its, pf_its, hik_its = inner_solve(Q, uN, Tᵢ, proj_rc, in_tol, hik_tol, bt, PF, FS, 1e-2, ρ_min, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
 
