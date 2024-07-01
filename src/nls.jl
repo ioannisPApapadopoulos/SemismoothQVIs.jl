@@ -217,7 +217,7 @@ function hik(op, uh, lb::AbstractArray{T}, ub; us::AbstractVector=[], M=[], tol:
             cr = r[inactive]
         end
         update[inactive] = -J[inactive,inactive] \ cr
-        
+
         # if ~isempty(known_roots)
         #     τ = deflation_step_adjustment(x, update, known_roots, M)
         #     update = τ * update

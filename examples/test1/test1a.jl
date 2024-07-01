@@ -1,6 +1,5 @@
 using Gridap, SemismoothQVIs
-using Plots
-using LaTeXStrings
+using Plots, LaTeXStrings
 
 """
 Section 7.2 Test 1: a one-dimensional QVI with a known solution
@@ -33,6 +32,8 @@ Q = GeneralizedThermoformingQVI(dΩ, k, Φ₀, ϕ, Ψ₀, ψ, g, dg, f, Uu, UT)
 
 # Initial guess
 T₀ = interpolate_everywhere(x->5.0, UT)
+
+# Hack for obtaining stiffness matrix J ≈ -Δ
 J = Gridap.Algebra.jacobian(FEOperator(Q.au0..., Uu, Vu), interpolate_everywhere(x->0.0, Uu))
 
 errs1, errs2, eocs1, eocs2, isxB, zhs1, zhs2 = [], [], [], [], [], [], []
@@ -40,7 +41,7 @@ for (u₀, j) in zip([interpolate_everywhere(x->0.0, Uu), FEFunction(Vu, J \ f.f
     # fixed point iteration
     (zhs1, h1_1, its_1) = fixed_point(Q, u₀, T₀; max_its=j, out_tol=1e-13, in_tol=1e-13, ρ0=1, PF=true, show_inner_trace=false);
     # Semismooth Newton method
-    (zhs2, h1_2, its_2, is_2) = semismoothnewton(Q, u₀, T₀; max_its=30, out_tol=1e=12, in_tol=1e-12, PF=true, globalization=true, show_inner_trace=false);
+    (zhs2, h1_2, its_2, is_2) = semismoothnewton(Q, u₀, T₀; max_its=30, out_tol=1e-12, in_tol=1e-12, PF=true, globalization=true, show_inner_trace=false);
     err1, eoc1 = EOC(Q, first.(zhs1), u₁)
     err2, eoc2 = EOC(Q, first.(zhs2), u₁)
     append!(errs1, [err1]); append!(errs2, [err2]); append!(eocs1, [eoc1]); append!(eocs2, [eoc2]); append!(isxB, [is_2[2]])
