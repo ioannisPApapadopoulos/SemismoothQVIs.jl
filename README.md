@@ -47,9 +47,10 @@ The optional arguments in the solvers are:
 |`out_tol`|Float|Absolute tolerance for outer solver|Default is `1e-10`.|
 |`in_tol`|Float|Absolute tolerance for inner solvers|Default is `1e-10`.|
 |`hik_tol`|Float|Absolute tolerance for inner HIK solver|Default is `1e-10`.|
+|`linesearch`|Boolean (true/false)|Perform a backtracking linesearch for the SSN update|Default is `false`. Only for `semismoothnewton`.|
 |`globalization`|Boolean (true/false)|Compute globalization iterate $x_B$ as well as the Newton iterate $x_N$|Default is `false`. Only for `semismoothnewton` and `moreau_yosida_newton`.|
 |`proj_rc`|(Float, Float)|(radius, center) for projection.|Default is `(Inf, 0.0)`. Not yet implemented for `moreau_yosida_newton`. Nonzero center not yet implemented for `semismoothnewton`.|
-|`bt`|Boolean (true/false)|Backtracking linesearch for Newton solver.|Default is `true`.|
+|`bt`|Boolean (true/false)|Backtracking linesearch for (inner) Newton solver.|Default is `true`.|
 |`PF`|Boolean (true/false)|Use a path-following Moreau-Yosida regularization to solve the inner obstacle problem.|Default is `true`. Only for `fixed_point` and `semismoothnewton`.|
 |`ρ0`|Float|Initial parameter for the path-following Moreau-Yosida regularization.|Default is `1`. Only for `fixed_point`.|
 |`ρ_min`|Float|Terminate path-following Moreau-Yosida regularization if ρ<ρ_min.|Default is `1e-6`. Only for `fixed_point` and `semismoothnewton`.|

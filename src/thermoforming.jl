@@ -243,7 +243,7 @@ function fixed_point(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, min
     return (zhs, h1_1, its)
 end
 
-function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, out_tol=1e-10, in_tol=1e-10, hik_tol=1e-10, globalization=false, proj_rc=(Inf, 0.0), ρ_min=1e-6, bt=true, PF=true, FS=true, show_trace=true, show_inner_trace=true, X=[])
+function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20, out_tol=1e-10, in_tol=1e-10, hik_tol=1e-10, globalization=false, linesearch=false, proj_rc=(Inf, 0.0), ρ_min=1e-6, bt=true, PF=true, FS=true, show_trace=true, show_inner_trace=true, X=[])
 
     FS == false && @warn("Are you sure you want FS=false? This will prevent superlinear convergence.")
     Uu, Vu = Q.fe_space_u
@@ -302,10 +302,11 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20
 
         # τ = defl_τ(uᵢ.free_values[:], δuN.free_values[:], [zeros(Vu.nfree)], X)
 
-        ls = BackTracking()
-        ls_α = bt_linesearch(Q, ls, uᵢ, δuN, Tᵢ, proj_rc, in_tol, hik_tol, bt, PF, FS, ρ_min, newton_its, pf_its, hik_its)
-
-        print("Linesearch stepsize: $ls_α \n")
+        if linesearch == true   
+            ls_α = bt_linesearch(Q, uᵢ, δuN, Tᵢ, proj_rc, in_tol, hik_tol, bt, PF, FS, ρ_min, newton_its, pf_its, hik_its)
+        else
+            ls_α = 1.0
+        end
         uN = FEFunction(Vu, uᵢ.free_values[:] + ls_α*δuN.free_values[:])
 
         puN, TN, SN, newton_its, pf_its, hik_its = inner_solve(Q, uN, Tᵢ, proj_rc, in_tol, hik_tol, bt, PF, FS, 1e-2, ρ_min, newton_its, pf_its, hik_its, show_trace=show_inner_trace)
@@ -331,8 +332,8 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20
         append!(h1s, h1c)
         append!(zhs, [[uᵢ, Tᵢ]])
         outer_its += 1
-        show_trace && print("Semismooth Newton: Iteration $outer_its, ‖uᵢ₊₁ - uᵢ‖ + ‖P ∘ uᵢ - uᵢ‖ = $h1c\n")
-
+        # show_trace && print("Semismooth Newton: Iteration $outer_its, ‖uᵢ₊₁ - uᵢ‖ + ‖P ∘ uᵢ - uᵢ‖ = $h1c\n")
+        show_trace && print("Semismooth Newton: Iteration $outer_its, ‖R(uᵢ)‖ = $h1c, stepsize: $ls_α\n")
     end
     append!(zhs, [[uB, Tᵢ]])
     its = (outer_its, newton_its, pf_its, hik_its)
