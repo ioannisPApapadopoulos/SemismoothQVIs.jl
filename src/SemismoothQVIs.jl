@@ -15,6 +15,7 @@ include("nls.jl")
 include("thermoforming.jl")
 include("nonlinearvi.jl")
 include("misc.jl")
+include("linesearch.jl")
 
 
 
