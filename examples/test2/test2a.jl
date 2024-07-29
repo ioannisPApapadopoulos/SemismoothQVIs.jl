@@ -39,45 +39,33 @@ err1b, _ = EOC(Q, first.(zhs1), u₀)
 (zhs2, h1_2, its_2, is_2) = semismoothnewton(Q, u₀, T₀; max_its=80, out_tol=1e-13, in_tol=1e-13, PF=true, globalization=true, proj_rc=(Inf,0.0), show_inner_trace=false);
 err2a, _ = EOC(Q, first.(zhs2), u₁)
 err2b, _ = EOC(Q, first.(zhs2), u₀)
-(zhs3, h1_3, its_3, is_3) = semismoothnewton(Q, u₀, T₀; max_its=80, out_tol=1e=13, in_tol=1e-13, PF=true, globalization=false, proj_rc=(Inf,0.0), show_inner_trace=false);
+(zhs3, h1_3, its_3, is_3) = semismoothnewton(Q, u₀, T₀; max_its=80, out_tol=1e-13, in_tol=1e-13, PF=true, globalization=false, proj_rc=(Inf,0.0), show_inner_trace=false);
 err3a, _ = EOC(Q, first.(zhs3), u₁)
 err3b, _ = EOC(Q, first.(zhs3), u₀)
+(zhs4, h1_4, its_4, is_4) = semismoothnewton(Q, u₀, T₀; max_its=80, out_tol=1e-13, in_tol=1e-13, PF=true, globalization=false, linesearch=true, proj_rc=(Inf,0.0), show_inner_trace=false);
+err4a, _ = EOC(Q, first.(zhs4), u₁)
+err4b, _ = EOC(Q, first.(zhs4), u₀)
 
 ls = [:solid, :dash, :dashdot, :dashdotdot]
-Plots.plot(0:lastindex(err1a)-1, err1a, linestyle=ls[1], linewidth=2, marker=:dot, label="Fixed Point", yscale=:log10,)
-Plots.plot!(0:lastindex(err2a)-1, err2a, linestyle=ls[1], linewidth=2, marker=:dtriangle, label="Algorithm 1", yscale=:log10,)
-p = Plots.plot!(0:lastindex(err3a)-1, err3a,
-    linewidth=2,
-    linestyle=ls[1],
-    marker=:square,
-    title=L"\alpha_1 = 10, \; \alpha_2 = 1, \; u_0 = I_{h} \bar u_2",
-    label="Semismooth Newton",
-    xlabel="Iterations" * L" $i$",
-    ylabel=L"\Vert u_{i, h} - \bar u_1 \, \Vert_{H^1_0(0,1)}",
-    xlabelfontsize=15, ylabelfontsize=15, legendfontsize=8,xtickfontsize=10,ytickfontsize=10,
-    legend=:bottomleft,
-    xlim=[0,75],
-    yscale=:log10
-)
-Plots.savefig("test2-Fig1a.pdf")
-
 err1b[1] = NaN
 err2b[1] = NaN
 err3b[1] = NaN
-Plots.plot(0:lastindex(err1b)-1, err1b, linestyle=ls[2], linewidth=2, marker=:dot, label="Fixed Point", yscale=:log10,)
-Plots.plot!(0:lastindex(err2b)-1, err2b, linestyle=ls[2], linewidth=2, marker=:dtriangle, label="Algorithm 1", yscale=:log10,)
+err4b[1] = NaN
+Plots.plot(0:lastindex(err1b)-1, err1b, linestyle=ls[1], linewidth=2, marker=:dot, label="Fixed Point", yscale=:log10,)
+Plots.plot!(0:lastindex(err2b)-1, err2b, linestyle=ls[1], linewidth=2, marker=:dtriangle, label="Algorithm 1", yscale=:log10,)
 p = Plots.plot!(0:lastindex(err3b)-1, err3b,
     linewidth=2,
     linestyle=ls[1],
     marker=:square,
     title=L"\alpha_1 = 10, \; \alpha_2 = 1, \; u_0 = I_{h} \bar u_2",
-    label="Semismooth Newton",
+    label="Vanilla SSN",
     xlabel="Iterations" * L" $i$",
     ylabel=L"\Vert u_{i, h} - \bar u_2 \, \Vert_{H^1_0(0,1)}",
     xlabelfontsize=15, ylabelfontsize=15, legendfontsize=8,xtickfontsize=10,ytickfontsize=10,
-    legend=:bottomright,
+    legend=:right,
     xlim=[0,75],
-    ylim=[1e-14, 5e1],
+    ylim=[1e-6, 5e1],
     yscale=:log10
 )
+Plots.plot!(0:lastindex(err4b)-1, err4b, linestyle=ls[1], linewidth=2, marker=:diamond, label="Backtracking SSN")
 Plots.savefig("test2-Fig1b.pdf")

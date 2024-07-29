@@ -10,9 +10,9 @@ f = interpolate_everywhere(x->25, Uu)
 # g and its derivative
 function g(s)
     if s ≤ 0
-        return 1/6
+        return 1/5
     elseif 0 < s < 1
-        return (1-s)/6
+        return (1-s)/5
     else
         return 0.0
     end
@@ -22,7 +22,7 @@ function dg(s)
     if s ≤ 0
         return 0.0
     elseif 0 < s < 1
-        return -1/6
+        return -1/5
     else
         return 0.0
     end

@@ -334,6 +334,10 @@ function semismoothnewton(Q::GeneralizedThermoformingQVI, uᵢ, Tᵢ; max_its=20
         outer_its += 1
         # show_trace && print("Semismooth Newton: Iteration $outer_its, ‖uᵢ₊₁ - uᵢ‖ + ‖P ∘ uᵢ - uᵢ‖ = $h1c\n")
         show_trace && print("Semismooth Newton: Iteration $outer_its, ‖R(uᵢ)‖ = $h1c, stepsize: $ls_α\n")
+        if ls_α < 1e-10
+            print("Stepsize below 1e-10, terminating SSN.\n")
+            break
+        end
     end
     append!(zhs, [[uB, Tᵢ]])
     its = (outer_its, newton_its, pf_its, hik_its)

@@ -86,7 +86,7 @@ Plots.plot!(1:length(h1_3), h1_3,
     ylabel=L"\Vert R(u_{i}) \Vert_{H^1}",
     yticks=[1e-15,1e-10,1e-5,1e0],
     xtick=2:2:22,
-    ylim=[1e-16,5e0])
+    ylim=[1e-17,5e0])
 for (i, ρ)  in zip(1:4, [1e-2, 1e-4, 1e-6, 1e-8])
     p = Plots.plot!(1:length(h1_2s[i]), h1_2s[i], linestyle=ls[i], linewidth=2, marker=:dtriangle, label="MY-Newton (ρ = $ρ)", yscale=:log10,)
     display(p)

@@ -34,19 +34,29 @@ Q = GeneralizedThermoformingQVI(dΩ, k, Φ₀, ϕ, Ψ₀, ψ, g, dg, f, Uu, UT)
 T₀ = interpolate_everywhere(x->5.0, UT)
 J = Gridap.Algebra.jacobian(FEOperator(Q.au0..., Uu, Vu), interpolate_everywhere(x->0.0, Uu))
 
-errs1, errs2, errs3, eocs1, eocs2, eocs3, isxB, zhs1, zhs2, zhs3 = [], [], [], [], [], [], [], [], [], []
+errs1, errs2, errs3, errs4 =  Vector{Float64}[], Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]
+eocs1, eocs2, eocs3, eocs4 = Vector{Float64}[], Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]
+isxB_2, isxB_3, isxB_4 = Vector{Bool}[], Vector{Bool}[], Vector{Bool}[]
+zhs1, zhs2, zhs3, zhs4 = [], [], [], []
+
 for (u₀, j) in zip([interpolate_everywhere(x->0.0, Uu), FEFunction(Vu, J \ f.free_values)], [18,18])
     # fixed point iteration
     (zhs1, h1_1, its_1) = fixed_point(Q, u₀, T₀; max_its=j, out_tol=1e-13, in_tol=1e-13,  ρ0=1, PF=true, show_inner_trace=false);
-    # Semismooth Newton method
-    (zhs2, h1_2, its_2, is_2) = semismoothnewton(Q, u₀, T₀; max_its=j-1, out_tol=1e=12, in_tol=1e-12, PF=true, globalization=true, show_inner_trace=false);
+    # Algorithm 1
+    (zhs2, h1_2, its_2, is_2) = semismoothnewton(Q, u₀, T₀; max_its=j-1, out_tol=1e-12, in_tol=1e-12, PF=true, globalization=true, show_inner_trace=false);
+    # vanilla SSN
     (zhs3, h1_3, its_3, is_3) = semismoothnewton(Q, u₀, T₀; max_its=j-1, out_tol=1e-12, in_tol=1e-12, PF=true, globalization=false, show_inner_trace=false);
+    # Armijo backtracking linesearch
+    (zhs4, h1_4, its_4, is_4) = semismoothnewton(Q, u₀, T₀; max_its=j-1, out_tol=1e-12, in_tol=1e-12, PF=true, globalization=false, show_inner_trace=false, linesearch=true);
     
     err1, eoc1 = EOC(Q, first.(zhs1), u₁)
     err2, eoc2 = EOC(Q, first.(zhs2), u₁)
     err3, eoc3 = EOC(Q, first.(zhs3), u₁)
-    append!(errs1, [err1]); append!(errs2, [err2]);  append!(eocs1, [eoc1]); append!(eocs2, [eoc2]);  append!(isxB, [is_2[2]])
-    append!(errs3, [err3]); append!(eocs3, [eoc3]);
+    err4, eoc4 = EOC(Q, first.(zhs4), u₁)
+
+    push!(errs1, err1); push!(errs2, err2); push!(errs3, err3); push!(errs4, err4); 
+    push!(eocs1, eoc1); push!(eocs2, eoc2); push!(eocs3, eoc3); push!(eocs4, eoc4); 
+    push!(isxB_2, is_2[2]); push!(isxB_3, is_3[2]); push!(isxB_4, is_4[2]);
 end
 
 ls = [:solid, :dash, :dashdot, :dashdotdot]
@@ -58,8 +68,9 @@ for i in 1:2
         linewidth=2,
         linestyle=ls[i],
         marker=:square,
+        markeralpha= i == 1 ? 1.0 : 0.5,
         title=L"\alpha_1 = 10^{-2}, \alpha_2 = 10^{-2}",
-        label="Semismooth Newton  "*u0string[i],
+        label="Algorithm 1  "*u0string[i],
         xlabel="Iterations" * L" $i$",
         ylabel=L"\Vert u_{i, h} - \bar u \, \Vert_{H^1_0(0,1)}",
         xlabelfontsize=15, ylabelfontsize=15, legendfontsize=8,xtickfontsize=10,ytickfontsize=10,
@@ -86,7 +97,7 @@ for i in 1:2
         linestyle=ls[i],
         marker=:square,
         title=L"\alpha_1 = 10^{-2}, \alpha_2 = 10^{-2}",
-        label="Semismooth Newton  "*u0string[i],
+        label="Vanilla SSN  "*u0string[i],
         xlabel="Iterations" * L" $i$",
         ylabel=L"\Vert u_{i, h} - \bar u \, \Vert_{H^1_0(0,1)}",
         xlabelfontsize=15, ylabelfontsize=15, legendfontsize=8,xtickfontsize=10,ytickfontsize=10,
@@ -98,12 +109,25 @@ for i in 1:2
         yscale=:log10,
         color=theme_palette(:auto)[2*i]
     )
+    p = Plots.plot!(0:lastindex(errs4[i])-1, errs4[i], linestyle=ls[i], 
+        linewidth=2, marker=:dtriangle, 
+        label="Backtracking SSN  "*u0string[i],
+        color=theme_palette(:auto)[2*i+1])
 end
+# plot(1:5, rand(5); yscale=:log10)
 display(p)
 lim = 14; [annotate!(x, y-yp, Plots.text( "$(round(eocs3[2][i+1], digits=2))", 8, theme_palette(:auto)[4])) for (i, x, y, yp) in zip(0:2:lim-1, 2:2:lim+1, errs3[2][3:2:lim+2], errs3[2][3:2:lim+2]/1.2 )]
 lim = 14; [annotate!(x, y, Plots.text( "O", 17)) for (i, x, y) in zip(0:2:lim-1, 2:2:lim+1, errs3[2][3:2:lim+2])]
+
+lim = 18; [annotate!(x, y+5*yp, Plots.text( "$(round(eocs4[2][i+1], digits=2))", 8, theme_palette(:auto)[5])) for (i, x, y, yp) in zip(0:2:lim-1, 2:2:lim+1, errs4[2][3:2:lim+2], errs4[2][3:2:lim+2]/1.2 )]
+lim = 18; [annotate!(x, y, Plots.text( "O", 17)) for (i, x, y) in zip(0:2:lim-1, 2:2:lim+1, errs4[2][3:2:lim+2])]
+
 lim = 5; [annotate!(x, y-yp, Plots.text( "$(round(eocs3[1][i+1], digits=2))", 8, theme_palette(:auto)[2])) for (i, x, y, yp) in zip(0:2:lim-1, 2:2:lim+1, errs3[1][3:2:lim+2], errs3[1][3:2:lim+2]/1.2)]
 lim = 5; [annotate!(x, y, Plots.text( "O", 17)) for (i, x, y) in zip(0:2:lim-1, 2:2:lim+1, errs3[1][3:2:lim+2])]
+
+lim = 16; [annotate!(x, y+3*yp, Plots.text( "$(round(eocs4[1][i+1], digits=2))", 8, theme_palette(:auto)[3])) for (i, x, y, yp) in zip(0:2:lim-1, 2:2:lim+1, errs4[1][3:2:lim+2], errs4[1][3:2:lim+2]/1.2 )]
+lim = 16; [annotate!(x, y, Plots.text( "O", 17)) for (i, x, y) in zip(0:2:lim-1, 2:2:lim+1, errs4[1][3:2:lim+2])]
+
 plot!()
 Plots.savefig("test1-atan-Fig1c.pdf")
 
@@ -121,6 +145,11 @@ mould = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
 
 uh = zhs3[end][1]
 Th = zhs3[end][2]
+mould = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
+(h1(Q, u₁, uh), h1(Q, T₁, Th))
+
+uh = zhs4[end][1]
+Th = zhs4[end][2]
 mould = interpolate_everywhere(Φ₀ + ϕ ⋅ Th, VT)
 (h1(Q, u₁, uh), h1(Q, T₁, Th))
 
