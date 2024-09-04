@@ -18,6 +18,12 @@ This repository implements the numerical examples found in:
 |2|[test3.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/tree/main/test3/test3.jl)|
 |3|[test4.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/tree/main/test4/test4.jl)|
 
+## Installation
+
+This package is not yet registered. Please install using
+
+```pkg> add https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl.git```
+
 ## Solvers
 
 The solvers implemented are `fixed_point`, `semismoothnewton` &  `moreau_yosida_newton`.
