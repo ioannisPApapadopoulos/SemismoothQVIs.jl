@@ -72,7 +72,7 @@ end
 
 its = [round.(Rs, digits=3) (length.(errs1).-1) (length.(errs2).-2) (length.(errs3).-2) (length.(errs4).-2)]'
 eoc = round.([maximum.(eocs1) maximum.(eocs2) maximum.(eocs3) maximum.(eocs4)], digits=2)'
-converge = [last.(errs1) .< 1e-12 last.(errs2) .< 1e-12  last.(errs3) .< 1e-12 last.(errs4) .< 1e-12 ]'
+converge = [last.(errs1) .< 1e-13 last.(errs2) .< 1e-13  last.(errs3) .< 1e-13 last.(errs4) .< 1e-13 ]'
 tab = test2_latex_table(its,eoc,converge)
 open("test2_table.log", "w") do file
     write(file, tab)
