@@ -65,7 +65,7 @@ for i in 1:2
         linestyle=ls[i],
         marker=:square,
         title=L"\alpha_1 = 1+\pi^{-1}, \alpha_2 = 101/100",
-        label="Algorithm 1 "*u0string[i],
+        label="Algorithm 2 "*u0string[i],
         xlabel="Iterations" * L" $i$",
         ylabel=L"\Vert u_{i, h} - \bar u \, \Vert_{H^1_0(0,1)}",
         xlabelfontsize=15, ylabelfontsize=15, legendfontsize=8,xtickfontsize=10,ytickfontsize=10,

@@ -70,7 +70,7 @@ for i in 1:2
         marker=:square,
         markeralpha= i == 1 ? 1.0 : 0.5,
         title=L"\alpha_1 = 10^{-2}, \alpha_2 = 10^{-2}",
-        label="Algorithm 1  "*u0string[i],
+        label="Algorithm 2  "*u0string[i],
         xlabel="Iterations" * L" $i$",
         ylabel=L"\Vert u_{i, h} - \bar u \, \Vert_{H^1_0(0,1)}",
         xlabelfontsize=15, ylabelfontsize=15, legendfontsize=8,xtickfontsize=10,ytickfontsize=10,
@@ -97,7 +97,7 @@ for i in 1:2
         linestyle=ls[i],
         marker=:square,
         title=L"\alpha_1 = 10^{-2}, \alpha_2 = 10^{-2}",
-        label="Vanilla SSN  "*u0string[i],
+        label="Algorithm 1  "*u0string[i],
         xlabel="Iterations" * L" $i$",
         ylabel=L"\Vert u_{i, h} - \bar u \, \Vert_{H^1_0(0,1)}",
         xlabelfontsize=15, ylabelfontsize=15, legendfontsize=8,xtickfontsize=10,ytickfontsize=10,
@@ -111,7 +111,7 @@ for i in 1:2
     )
     p = Plots.plot!(0:lastindex(errs4[i])-1, errs4[i], linestyle=ls[i], 
         linewidth=2, marker=:dtriangle, 
-        label="Backtracking SSN  "*u0string[i],
+        label="Algorithm 1 + backtracking  "*u0string[i],
         color=theme_palette(:auto)[2*i+1])
 end
 # plot(1:5, rand(5); yscale=:log10)

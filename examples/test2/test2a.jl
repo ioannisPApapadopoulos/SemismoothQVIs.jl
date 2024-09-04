@@ -52,13 +52,13 @@ err2b[1] = NaN
 err3b[1] = NaN
 err4b[1] = NaN
 Plots.plot(0:lastindex(err1b)-1, err1b, linestyle=ls[1], linewidth=2, marker=:dot, label="Fixed Point", yscale=:log10,)
-Plots.plot!(0:lastindex(err2b)-1, err2b, linestyle=ls[1], linewidth=2, marker=:dtriangle, label="Algorithm 1", yscale=:log10,)
+Plots.plot!(0:lastindex(err2b)-1, err2b, linestyle=ls[1], linewidth=2, marker=:dtriangle, label="Algorithm 2", yscale=:log10,)
 p = Plots.plot!(0:lastindex(err3b)-1, err3b,
     linewidth=2,
     linestyle=ls[1],
     marker=:square,
     title=L"\alpha_1 = 10, \; \alpha_2 = 1, \; u_0 = I_{h} \bar u_2",
-    label="Vanilla SSN",
+    label="Algorithm 1",
     xlabel="Iterations" * L" $i$",
     ylabel=L"\Vert u_{i, h} - \bar u_2 \, \Vert_{H^1_0(0,1)}",
     xlabelfontsize=15, ylabelfontsize=15, legendfontsize=8,xtickfontsize=10,ytickfontsize=10,
@@ -67,5 +67,5 @@ p = Plots.plot!(0:lastindex(err3b)-1, err3b,
     ylim=[1e-6, 5e1],
     yscale=:log10
 )
-Plots.plot!(0:lastindex(err4b)-1, err4b, linestyle=ls[1], linewidth=2, marker=:diamond, label="Backtracking SSN")
+Plots.plot!(0:lastindex(err4b)-1, err4b, linestyle=ls[1], linewidth=2, marker=:diamond, label="Algorithm 1 + backtracking")
 Plots.savefig("test2-Fig1b.pdf")
