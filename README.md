@@ -20,7 +20,7 @@ This repository implements the numerical examples found in:
 
 ## Installation
 
-This package is not yet registered. Please install using
+The package is not registered. Please install via
 
 ```pkg> add https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl.git```
 
