@@ -2,7 +2,7 @@ using Gridap, SemismoothQVIs
 using Plots, LaTeXStrings
 
 """
-Section 8 An alternative application: nonlinear VIs and PDEs
+Section 4.5 An alternative application: nonlinear VIs and PDEs
 
 Given an obstacle Φ₀, find u ∈ H¹₀(Ω) that satisfies
     u ≤ Φ₀, ⟨-Δu - f - Φ(u), v - u⟩≥0 ∀ v∈H¹₀(Ω), v≤ Φ₀.

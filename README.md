@@ -2,34 +2,21 @@
 
 This repository implements the numerical examples found in:
 
-(1) "A Globalized Inexact Semismooth Newton Method for Obstacle-type Quasi-variational Inequalities with Applications in Thermoforming", Amal Alphonse, Constantin Christof, Ioannis. P. A. Papadopoulos and Michael Hintermüller (2024).
+"A Globalized Inexact Semismooth Newton Method for Obstacle-type Quasi-variational Inequalities with Applications in Thermoforming", Amal Alphonse, Constantin Christof, Ioannis. P. A. Papadopoulos and Michael Hintermüller (2024).
 
-## Installation
-To install the package, try:
+|Figure|File: examples/|
+|:-:|:-:|
+|1a, 1d|[test1a.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/blob/main/test1/test1a.jl)|
+|1b, 1c|[test1b.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/blob/main/test1/test1b.jl)|
+|2|[test2a.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/blob/main/test2/test2a.jl)|
+|3|[test3.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/blob/main/test3/test3.jl)|
+|4|[test4.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/blob/main/test4/test4.jl)|
 
-```julia
-julia> ] add git@github.com:ioannisPApapadopoulos/SemismoothQVIs.jl.git
-```
-
-If that does not work try:
-
-```julia
-julia> ] add https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl.git
-```
-
-If that also does not work, contact John. 
-
-Last resort: download the zip file, unzip, locate the folder and run
-
-```julia
-julia> ] 
-pkg> activate /location to folder/SemismoothQVIs
-  Activating project at `\location to folder\SemismoothQVIs.jl`
-(SemismoothQVIs) pkg> instantiate
-```
-If it says "Activating new project" then you are in the wrong folder.
-
-Checkout the examples in the examples/ folder and have fun!
+|Table|File: examples/|
+|:-:|:-:|
+|1|[test2b.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/blob/main/test2/test2b.jl)|
+|2|[test3.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/blob/main/test3/test3.jl)|
+|3|[test4.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/blob/main/test4/test4.jl)|
 
 ## Solvers
 

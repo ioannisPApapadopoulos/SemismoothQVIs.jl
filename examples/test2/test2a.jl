@@ -2,7 +2,7 @@ using Gridap, SemismoothQVIs
 using Plots, LaTeXStrings
 
 """
-Section 7.3 Test 2: a one-dimensional QVI with two known solutions
+Section 4.3 Test 2: a one-dimensional QVI with two known solutions
 
 Find u ∈ H¹₀(Ω) that satisfies
     u ≤ Φ₀ + Φ(u), ⟨-Δu - f, v - u⟩≥0 ∀ v∈H¹₀(Ω), v≤ Φ₀ + Φ(u)

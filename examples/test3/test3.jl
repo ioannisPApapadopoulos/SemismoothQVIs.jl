@@ -2,7 +2,7 @@ using Gridap, SemismoothQVIs
 using Plots, LaTeXStrings
 
 """
-Section 7.4 Test 3: the thermoforming QVI in two dimensions
+Section 4.4 Test 3: the thermoforming QVI in two dimensions
 
 Find u ∈ H¹₀(Ω) that satisfies
     u ≤ Φ₀ + Φ(u), ⟨-Δu - f, v - u⟩≥0 ∀ v∈H¹₀(Ω), v≤ Φ₀ + Φ(u)
