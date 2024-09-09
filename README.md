@@ -2,7 +2,7 @@
 
 This repository implements the numerical examples found in:
 
-"A Globalized Inexact Semismooth Newton Method for Obstacle-type Quasi-variational Inequalities with Applications in Thermoforming", Amal Alphonse, Constantin Christof, Ioannis. P. A. Papadopoulos and Michael Hintermüller (2024).
+"A Globalized Inexact Semismooth Newton Method for Obstacle-type Quasi-variational Inequalities with Applications in Thermoforming", Amal Alphonse, Constantin Christof, Michael Hintermüller, and Ioannis. P. A. Papadopoulos (2024).
 
 |Figure|File: examples/|
 |:-:|:-:|
