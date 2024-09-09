@@ -29,7 +29,7 @@ The package is not registered. Please install via
 The solvers implemented are `fixed_point`, `semismoothnewton` &  `moreau_yosida_newton`.
 
 `fixed_point` employs the algorithm uᵢ₊₁ = S(Φ(uᵢ)). This converges provided there is a contraction.
-`semismoothnewton` is Algorithm 1 in the paper.
+`semismoothnewton` implements Algorithms 1 and 2 in the paper.
 `moreau_yosida_newton` is a smoothed regularization of Algorithm 1.
 
 The optional arguments in the solvers are:
