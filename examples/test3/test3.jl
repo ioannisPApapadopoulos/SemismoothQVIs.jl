@@ -65,7 +65,7 @@ Plots.gr_cbar_offsets[] = (-0.05,-0.01)
 Plots.gr_cbar_width[] = 0.03
 p = surface(xx, xx, (x, y) -> mould(Point.(x,y)), 
     color=:redsblues, #:vik,
-    xlabel=L"x", ylabel=L"y", zlabel=L"(\Phi_0 + \varphi T)(x,y)",
+    xlabel=L"x_1", ylabel=L"x_2", zlabel=L"(\Phi_0 + \varphi T)(x,y)",
     # camera=(30,-30),
     title="Mould  "*L"\Phi_0 + \varphi T",
     margin=(-6, :mm),
