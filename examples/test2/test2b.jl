@@ -46,20 +46,21 @@ u₂_norm = h10(Q, u₂)
 
 # Solve via fixed point & semismooth Newton, both converge to maximal solution
 (zhs1_max, h1_1, its_1_max) = fixed_point(Q, u₀, T₀; max_its=50, in_tol=1e-13, out_tol=1e-13, PF=true, bt=true, proj_rc=(Inf, 0.0), show_inner_trace=false);
-(zhs2_max, h1_2, its_2_max, is_2) = semismoothnewton(Q, u₀, T₀; max_its=100, in_tol=1e-13, out_tol=1e-13, PF=true, globalization=false, proj_rc=(Inf,0.0), show_inner_trace=false);
+(zhs2_max, h1_2, its_2_max, is_2) = semismoothnewton(Q, u₀, T₀; max_its=100, in_tol=1e-13, out_tol=1e-11, PF=true, globalization=false, proj_rc=(Inf,0.0), show_inner_trace=false);
 
 errs1, errs2, errs3, errs4 = Vector{Float64}[], Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]
 eocs1, eocs2, eocs3, eocs4 = Vector{Float64}[], Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]
 isxB = Vector{Bool}[]
 zhs1_min, zhs2_min, zhs3_min, zhs4_min = [], [], [], []
+tics1, tics2, tics3, tics4 = [], [], [], []
 Rs = range(0.01, h10(Q, u₂), 10)
 for R in Rs
     # Solve via fixed point & semismooth Newton + projection, both converge to minimal solution
     print("Considering R=$R.\n")
-    (zhs1_min, h1_1, its_1_min) = fixed_point(Q, u₀, T₀; max_its=20, in_tol=1e-15, out_tol=1e-15, PF=true, bt=true, proj_rc=(R, 0.0), show_inner_trace=false);
-    (zhs2_min, h1_2, its_2_min, is_2) = semismoothnewton(Q, u₀, T₀; max_its=20, in_tol=1e-15, out_tol=1e-15, PF=true, globalization=true, proj_rc=(R,0.0), show_inner_trace=false);
-    (zhs3_min, h1_3, its_3_min, is_3) = semismoothnewton(Q, u₀, T₀; max_its=20, in_tol=1e-15, out_tol=1e-15, PF=true, globalization=false, proj_rc=(R,0.0), show_inner_trace=false);
-    (zhs4_min, h1_4, its_4_min, is_4) = semismoothnewton(Q, u₀, T₀; max_its=20, in_tol=1e-15, out_tol=1e-15, PF=true, globalization=false, proj_rc=(R,0.0), linesearch=true,show_inner_trace=false);
+    tic1 = @elapsed (zhs1_min, h1_1, its_1_min) = fixed_point(Q, u₀, T₀; max_its=20, in_tol=1e-15, out_tol=1e-15, PF=true, bt=true, proj_rc=(R, 0.0), show_inner_trace=false);
+    tic2 = @elapsed (zhs2_min, h1_2, its_2_min, is_2) = semismoothnewton(Q, u₀, T₀; max_its=20, in_tol=1e-15, out_tol=1e-15, PF=true, globalization=true, proj_rc=(R,0.0), show_inner_trace=false);
+    tic3 = @elapsed (zhs3_min, h1_3, its_3_min, is_3) = semismoothnewton(Q, u₀, T₀; max_its=20, in_tol=1e-15, out_tol=1e-15, PF=true, globalization=false, proj_rc=(R,0.0), show_inner_trace=false);
+    tic4 = @elapsed (zhs4_min, h1_4, its_4_min, is_4) = semismoothnewton(Q, u₀, T₀; max_its=20, in_tol=1e-15, out_tol=1e-15, PF=true, globalization=false, proj_rc=(R,0.0), linesearch=true,show_inner_trace=false);
 
     err1, eoc1 = EOC(Q, first.(zhs1_min), u₁)
     err2, eoc2 = EOC(Q, first.(zhs2_min), u₁)
@@ -68,6 +69,7 @@ for R in Rs
     push!(errs1, err1); push!(errs2, err2); push!(errs3, err3); push!(errs4, err4)
     push!(eocs1, eoc1); push!(eocs2, eoc2); push!(eocs3, eoc3); push!(eocs4, eoc4)
     push!(isxB, is_3[2])
+    push!(tics1, tic1);push!(tics2, tic2);push!(tics3, tic3);push!(tics4, tic4);
 end
 
 its = [round.(Rs, digits=3) (length.(errs1).-1) (length.(errs2).-2) (length.(errs3).-2) (length.(errs4).-2)]'

@@ -40,18 +40,24 @@ errs1, errs2, errs3 =  Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]
 eocs1, eocs2, eocs3 = Vector{Float64}[], Vector{Float64}[], Vector{Float64}[]
 isxB_2, isxB_3 = Vector{Bool}[], Vector{Bool}[]
 zhs1, zhs2, zhs3 = [], [], []
+tics1, tics2, tics4 = [], [], []
 for (u₀, j) in zip([interpolate_everywhere(x->0.0, Uu), FEFunction(Vu, J \ f.free_values)], [18,13])
     # fixed point iteration
-    (zhs1, h1_1, its_1) = fixed_point(Q, u₀, T₀; max_its=j, out_tol=1e-13, in_tol=1e-13, ρ0=1, PF=true, show_inner_trace=false);
+    tic1 = @elapsed (zhs1, h1_1, its_1) = fixed_point(Q, u₀, T₀; max_its=j, out_tol=1e-13, in_tol=1e-13, ρ0=1, PF=true, show_inner_trace=false);
     # Semismooth Newton method
-    (zhs2, h1_2, its_2, is_2) = semismoothnewton(Q, u₀, T₀; max_its=30, out_tol=1e-12, in_tol=1e-12, PF=true, globalization=true, show_inner_trace=false);
+    tic2 = @elapsed (zhs2, h1_2, its_2, is_2) = semismoothnewton(Q, u₀, T₀; max_its=30, out_tol=1e-12, in_tol=1e-12, PF=true, globalization=true, show_inner_trace=false);
     (zhs3, h1_3, its_3, is_3) = semismoothnewton(Q, u₀, T₀; max_its=30, out_tol=1e-12, in_tol=1e-12, PF=true, globalization=false, linesearch=true,show_inner_trace=false);
+
+    tic4 = @elapsed semismoothnewton(Q, u₀, T₀; max_its=30, out_tol=1e-10, in_tol=1e-12, PF=true, globalization=false, show_inner_trace=false);
+
     err1, eoc1 = EOC(Q, first.(zhs1), u₁)
     err2, eoc2 = EOC(Q, first.(zhs2), u₁)
     err3, eoc3 = EOC(Q, first.(zhs3), u₁)
+
     push!(errs1, err1); push!(errs2, err2); push!(errs3, err3); 
     push!(eocs1, eoc1); push!(eocs2, eoc2); push!(eocs3, eoc3); 
     push!(isxB_2, is_2[2]); push!(isxB_3, is_3[2])
+    push!(tics1, tic1); push!(tics2, tic2); push!(tics4, tic4)
 end
 
 ls = [:solid, :dash, :dashdot, :dashdotdot]
@@ -65,7 +71,7 @@ for i in 1:2
         linestyle=ls[i],
         marker=:square,
         title=L"\alpha_1 = 1+\pi^{-1}, \alpha_2 = 101/100",
-        label="Algorithm 2 "*u0string[i],
+        label="Algorithm 1 & 2 "*u0string[i],
         xlabel="Iterations" * L" $i$",
         ylabel=L"\Vert u_{i, h} - \bar u \, \Vert_{H^1_0(0,1)}",
         xlabelfontsize=15, ylabelfontsize=15, legendfontsize=8,xtickfontsize=10,ytickfontsize=10,

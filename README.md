@@ -14,9 +14,10 @@ This repository implements the numerical examples found in:
 
 |Table|File: examples/|
 |:-:|:-:|
-|1|[test2/test2b.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/tree/main/examples/test2/test2b.jl)|
-|2|[test3/test3.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/tree/main/examples/test3/test3.jl)|
-|3|[test4/test4.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/tree/main/examples/test4/test4.jl)|
+|1|[test1/test1a.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/tree/main/examples/test1/test1a.jl)|
+|2|[test2/test2b.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/tree/main/examples/test2/test2b.jl)|
+|3|[test3/test3.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/tree/main/examples/test3/test3.jl)|
+|4|[test4/test4.jl](https://github.com/ioannisPApapadopoulos/SemismoothQVIs.jl/tree/main/examples/test4/test4.jl)|
 
 ## Installation
 
