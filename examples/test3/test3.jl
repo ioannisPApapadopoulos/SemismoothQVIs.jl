@@ -98,6 +98,7 @@ Plots.savefig("pyr-tf-convergence.pdf")
 h1s = []
 its = zeros(7, 4)
 its2 = zeros(7, 4)
+tics1, tics2 = [], []
 ns = [25,50,100,150,200,250,300]
 
 for (n, i) in zip(ns, 1:7)
@@ -109,13 +110,16 @@ for (n, i) in zip(ns, 1:7)
     Tᵢ = FEFunction(VT, ones(VT.nfree))
 
     Q = GeneralizedThermoformingQVI(dΩ, k, Φ₀, ϕ, Ψ₀, ψ, g, dg, f, Uu, UT)
-    (zhs, h1_, its_, is_) = semismoothnewton(Q, uᵢ, Tᵢ; max_its=4, in_tol=1e-15, out_tol=1e-12, globalization=true, show_inner_trace=false);
-    (_, _, its2_, _) = semismoothnewton(Q, uᵢ, Tᵢ; max_its=4, in_tol=1e-15, out_tol=1e-12, globalization=false, show_inner_trace=true);
+    tic1 = @elapsed (zhs, h1_, its_, is_) = semismoothnewton(Q, uᵢ, Tᵢ; max_its=4, in_tol=1e-15, out_tol=1e-12, globalization=true, show_inner_trace=false);
+    tic2 = @elapsed (_, _, its2_, _) = semismoothnewton(Q, uᵢ, Tᵢ; max_its=4, in_tol=1e-15, out_tol=1e-12, globalization=false, show_inner_trace=false);
 
 
     its[i,:] .= its_
     its2[i,:] .= its2_
-    append!(h1s, [h1_])
+
+    push!(tics1, tic1)
+    push!(tics2, tic2)
+    push!(h1s, h1_)
 end
 
 its_ns1 = hcat(round.( 1 ./ ns, digits=5), its)
